@@ -1,1 +1,1 @@
-# thesmartbooking
+# The Smart Booking
