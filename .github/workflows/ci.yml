@@ -1,0 +1,31 @@
+name: Go CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    name: Go Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar ambiente Go com Cache
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Compilar (go build)
+        run: go build ./...
+
+      - name: Análise estática (go vet)
+        run: go vet ./...
+
+      - name: Executar testes (go test)
+        run: go test ./...
