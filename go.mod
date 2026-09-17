@@ -1,3 +1,3 @@
-module github.com/thisdev-davi/thesmartbooking
+module github.com/The-Smart-Booking/thesmartbooking
 
 go 1.27.1
