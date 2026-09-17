@@ -4,7 +4,7 @@ Estado de cada card do projeto, em texto. Serve para dois públicos: a equipe, q
 quer ver a sprint inteira sem abrir o navegador, e o **Claude Code**, que precisa
 saber em que card o time está antes de escrever qualquer linha.
 
-**Atualizado em:** 16/09/2026
+**Atualizado em:** 17/09/2026
 **Sprint atual:** Sprint 0 — Fundação
 **Board:** GitHub Projects › Smart Booking DevOps
 
@@ -18,9 +18,9 @@ saber em que card o time está antes de escrever qualquer linha.
 
 | | |
 |---|---|
-| Em andamento | #6 `.env.example e config`, #7 `GitHub Actions` |
-| Em revisão | #3 `Inicializar módulo Go e estrutura de pastas` |
-| Próximos a puxar (Ready) | #23, #24, #25 |
+| Em andamento | #7 `GitHub Actions` (falta tornar o check obrigatório na proteção da `main`) |
+| Em revisão | — |
+| Próximos a puxar (Ready) | #25 |
 | Fecha a Sprint 0 | #25 `Ambiente validado nas três máquinas` |
 | Atenção | #26 (Postgres no CI) precisa entrar antes de #16 poder ser verificada |
 
@@ -48,22 +48,26 @@ revisão) · `feito`. A caixa `[x]` só é marcada quando o card chega em **feit
 
 Meta: as três máquinas rodam o projeto, com CI verde e o primeiro PR mergeado.
 
-- [ ] #3 — [F0] Inicializar módulo Go e estrutura de pastas · `review`
+- [x] #3 — [F0] Inicializar módulo Go e estrutura de pastas · `feito`
 - [x] #4 — [F0] Branch protection na main (1 aprovação obrigatória) · `feito`
 - [x] #5 — [F0] docker-compose com postgres:16-alpine · `feito`
-- [ ] #6 — [F0] .env.example e carregamento de config na API · `wip`
+- [x] #6 — [F0] .env.example e carregamento de config na API · `feito` · carregamento de config adiado para a F2 (junto do #19)
 - [ ] #7 — [F0] GitHub Actions: go build, go vet, go test · `wip`
 - [x] #8 — [F0] Padrão de commit, template de PR e template de issue · `feito`
 - [ ] #9 — [F1] goose e migration 001 (extensões e app.current_tenant_id) · `backlog`
-- [ ] #23 — [F0] Trazer requisitos, backlog e guia de BD para docs/ · `ready`
-- [ ] #24 — [F0] Registrar as decisões em aberto com prazo em docs/decisoes.md · `ready`
+- [x] #23 — [F0] Trazer requisitos, backlog e guia de BD para docs/ · `feito`
+- [x] #24 — [F0] Registrar as decisões em aberto com prazo em docs/decisoes.md · `feito`
 - [ ] #25 — [F0] Ambiente validado nas três máquinas · `ready`
 
-> #3 está em revisão: **aproveite o PR aberto** para aplicar os ajustes de
-> estrutura decididos na revisão de arquitetura (`internal/api` em vez de
-> `internal/http`, `internal/storage` em vez de `internal/db`, pacotes de domínio
-> para a regra de negócio). Depois de mergeado, isso vira refactor com três
-> pessoas mexendo nos mesmos arquivos.
+> #3: a estrutura agora é `cmd/api`. Os pacotes
+> `internal/api` e `internal/storage` (decididos na revisão de arquitetura, no
+> lugar de `internal/http` e `internal/db`) nascem nos cards que os usam.
+>
+> #4 está `feito`, mas houve push direto na `main` (`181b3d6`). Confira em
+> Settings › Branches se "Do not allow bypassing the above settings" está ligado.
+>
+> Não há mais branch `dev`: branch sai da `main` e volta por PR. Padrões em
+> `CONTRIBUTING.md`.
 
 ## Sprint 1 — Schema e isolamento
 
