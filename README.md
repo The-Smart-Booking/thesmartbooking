@@ -29,7 +29,6 @@ Hoje:
 thesmartbooking/
 ├── .github/
 │   ├── workflows/ci.yml        # go build, go vet, go test em PR para a main
-│   ├── ISSUE_TEMPLATE/card.md
 │   └── pull_request_template.md
 ├── cmd/api/                    # entrada da API
 ├── web/                        # frontend React + Vite
