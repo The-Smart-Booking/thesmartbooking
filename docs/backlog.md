@@ -1,13 +1,25 @@
 # Backlog — Smart Booking
 
-Versão **3** · 16/09/2026 · alinhado ao `docs/requisitos.md` v0.4 e ao
+Versão **3.1** · 17/09/2026 · alinhado ao `docs/requisitos.md` v0.4 e ao
 `docs/guia-banco-de-dados.md` v1.1
+
+## Mudanças desde a v3
+
+- Restaurados 4 itens da v1 que a v3 perdeu na consolidação da Fase 3: camada de
+  repositório, formato de erro da API, fuso horário por tenant e enfileiramento da
+  notificação de confirmação. Os três primeiros estavam na lista de **nunca corte**.
+- Fase 3 renumerada para refletir ordem de dependência: os dois itens que são
+  pré-requisito de todos os outros (repositório e formato de erro) passaram a 3.1 e
+  3.2. Renumeração sem custo — a Fase 3 ainda não tem issue criada.
+- Decisão de acesso a dados registrada: **sqlc + pgx**, sem ORM (item 0.10).
+- Lista de **nunca corte** corrigida: faltavam o teste de concorrência do worker e
+  os itens de isolamento restaurados.
 
 ## Mudanças desde a v2
 
 - Numeração alinhada ao repositório: o prefixo do título é a **fase**
   (`[F0]`…`[F8]`), e a sprint mora na **milestone**. A v2 usava `[T0]`.
-- Itens marcados com ⭑ são novos, vindos da revisão de arquitetura de 16/09.
+- Itens marcados com ⭑ são novos, vindos das revisões de arquitetura de 16 e 17/09.
 - A coluna **Issue** liga cada item ao card no GitHub (vazio = ainda não criado).
 
 ## Como usar este documento
@@ -38,12 +50,23 @@ tem contexto + critérios de aceite.
 | 0.7 ⭑ | `[F0] Trazer requisitos, backlog e guia de BD para docs/` | P | #23 |
 | 0.8 ⭑ | `[F0] Registrar as decisões em aberto com prazo em docs/decisoes.md` | P | #24 |
 | 0.9 ⭑ | `[F0] Ambiente validado nas três máquinas` | P | #25 |
+| 0.10 ⭑ | `[F0] Decidir e instalar sqlc + pgx (sem ORM) e registrar em docs/decisoes.md` | P | |
 
 **Critérios de aceite (0.3):** `docker compose up` sobe o Postgres; a aplicação
 conecta usando as variáveis do `.env`; volume persiste dados entre reinícios.
 
 **Critérios de aceite (0.5):** o workflow roda em todo PR para a `main`; PR com
 teste quebrado não pode ser mergeado.
+
+**Critérios de aceite (0.10):** `sqlc.yaml` no repositório apontando para
+`db/migrations` e `db/queries`; `sqlc generate` roda sem erro; decisão e
+justificativa registradas em `docs/decisoes.md`.
+
+> A escolha de não usar ORM decorre do RLS: o contexto de tenant precisa valer na
+> mesma transação e conexão da query, e ORM gerencia pool e transação por conta
+> própria. Além disso, `EXCLUDE USING gist`, FKs compostas, `FOR UPDATE SKIP
+> LOCKED` e `tstzrange` ficam fora do que qualquer ORM Go modela — seria SQL puro
+> de todo jeito, com uma camada extra por cima.
 
 ## FASE 1 — Banco de dados e isolamento
 
@@ -105,25 +128,55 @@ isolamento roda conectado como `app_user`.
 
 ## FASE 3 — API de agendamentos
 
+Renumerada na v3.1 para seguir a ordem de dependência: 3.1 e 3.2 são pré-requisito
+de todo o resto da fase.
+
 | # | Título da issue | Tam. | Issue |
 |---|---|---|---|
-| 3.1 | `[F3] CRUD de serviços` | M | |
-| 3.2 | `[F3] CRUD de clientes (com geração de vinculo_token)` | M | |
-| 3.3 | `[F3] CRUD de disponibilidades` | M | |
-| 3.4 | `[F3] Cálculo de slots livres a partir de disponibilidade e agendamentos` | G | |
-| 3.5 | `[F3] Criar agendamento traduzindo 23P01 em HTTP 409` | G | |
-| 3.6 | `[F3] Listar agendamentos com filtro por período e prestador` | M | |
-| 3.7 | `[F3] Cancelar e reagendar (descartando o lembrete pendente)` | G | |
+| 3.1 ⭑ | `[F3] Camada de repositório com sqlc: nenhuma função aceita query sem tenantID` | M | |
+| 3.2 ⭑ | `[F3] Padronizar respostas de erro da API e documentar em docs/api-erros.md` | P | |
+| 3.3 | `[F3] CRUD de serviços` | M | |
+| 3.4 | `[F3] CRUD de clientes (com geração de vinculo_token)` | M | |
+| 3.5 | `[F3] CRUD de disponibilidades` | M | |
+| 3.6 | `[F3] Cálculo de slots livres a partir de disponibilidade e agendamentos` | G | |
+| 3.7 | `[F3] Criar agendamento traduzindo 23P01 em HTTP 409` | G | |
+| 3.8 | `[F3] Listar agendamentos com filtro por período e prestador` | M | |
+| 3.9 | `[F3] Cancelar e reagendar (descartando o lembrete pendente)` | G | |
+| 3.10 ⭑ | `[F3] Fuso horário por tenant e conversão na borda` | M | |
+| 3.11 ⭑ | `[F3] Enfileirar notificação de confirmação na transação de criação` | M | |
 
-**Critérios de aceite (3.7):** cancelar um agendamento marca a notificação de
-lembrete pendente como `descartado` **na mesma transação**; reagendar cria nova
-notificação com `versao + 1`.
+**Critérios de aceite (3.1):** toda função gerada é consumida via `db.New(tx)`,
+amarrada à transação que já definiu `app.tenant_id`. Nenhum caminho de código
+executa query fora desse contexto.
+
+**Critérios de aceite (3.2):** formato único `{"erro": {"codigo", "mensagem",
+"campos?"}}`; nenhum erro de banco vaza para a resposta — `pgErr.Message` vai para
+o log e o cliente recebe código traduzido; registro de outro tenant retorna 404, não
+403, para não confirmar a existência do ID; tipo correspondente declarado em
+`web/src/types/`.
+
+**Critérios de aceite (3.7):** violação da constraint de exclusão vira HTTP 409 com
+`codigo: horario_indisponivel`, nunca 500.
+
+**Critérios de aceite (3.9):** cancelar um agendamento marca a notificação de
+lembrete pendente como `descartado` **na mesma transação**; reagendar descarta o
+lembrete antigo e cria nova notificação com `versao + 1`.
+
+**Critérios de aceite (3.10):** horários gravados em UTC; conversão apenas na
+borda, usando `tenants.fuso_horario`; teste com dois fusos diferentes comprova.
+
+**Critérios de aceite (3.11):** a linha em `notificacoes` entra na **mesma
+transação** que cria o agendamento, com `agendar_para` nulo. Nunca existe
+agendamento sem notificação nem notificação sem agendamento.
+
+> 3.10 parece detalhe e invalida a Fase 6 inteira se estiver errado: fuso errado
+> significa lembrete na hora errada.
 
 ## FASE 4 — Frontend
 
 | # | Título da issue | Tam. | Issue |
 |---|---|---|---|
-| 4.1 | `[F4] Setup Vite + React + TypeScript + roteamento` | P | |
+| 4.1 | `[F4] Setup Vite + React + TypeScript + roteamento` | M | |
 | 4.2 ⭑ | `[F4] Proxy do Vite para a API na mesma origem` | P | |
 | 4.3 | `[F4] Cliente HTTP com envio de credenciais e tratamento de 401` | M | |
 | 4.4 | `[F4] Telas de cadastro e login` | M | |
@@ -135,12 +188,18 @@ notificação com `versao + 1`.
 | 4.10 | `[F4] Indicador visual de cliente NÃO vinculado ao Telegram` | M | |
 | 4.11 | `[F4] Estados de carregamento e exibição de erro da API` | M | |
 
+**Critérios de aceite (4.1):** estrutura `api/`, `pages/`, `components/`, `types/`
+definida; duas rotas renderizam e a navegação entre elas funciona; `npm run build`
+passa sem erro de TypeScript e roda no CI. Reclassificada de P para M na v3.1 — o
+setup em si é rápido, a estrutura de pastas que as demais issues assumem não é.
+
 **Critérios de aceite (4.2):** com o Vite rodando, a SPA chama a API na mesma
 origem e o cookie de sessão é enviado. Sem isso, `SameSite=Lax` bloqueia o cookie
 em desenvolvimento e o time perde uma tarde achando que o login está quebrado.
 
 > 4.10 não é detalhe cosmético. Sem esse indicador, o prestador assume que o
-> lembrete foi enviado quando o cliente sequer é alcançável.
+> lembrete foi enviado quando o cliente sequer é alcançável. Precisa distinguir
+> "nunca vinculou" de "bloqueou o bot" — são estados diferentes na tabela.
 
 ## FASE 5 — Bot: vinculação
 
@@ -186,6 +245,10 @@ Trocar de canal deve ser adicionar uma implementação, não editar o worker.
 **Critérios de aceite (6.11):** rodar dois workers em paralelo contra o mesmo banco
 produz exatamente um envio por agendamento.
 
+> 6.10 tem valor de desenvolvimento, não só de produto: com a antecedência
+> configurável, dá para colocar 1 minuto em ambiente local. Sem isso, cada teste
+> manual de lembrete custa uma tarde.
+
 ## FASE 7 — Interação pelo bot (opcional no MVP)
 
 | # | Título da issue | Tam. | Issue |
@@ -216,7 +279,7 @@ produz exatamente um envio por agendamento.
 ## Caminho crítico
 
 ```
-1.3 → 1.6 → 1.8 → 2.6 → 3.5 → 4.7
+1.3 → 1.6 → 1.8 → 2.6 → 3.1 → 3.7 → 4.7
                     ↘
                5.7 → 6.4 → 6.5
 ```
@@ -225,6 +288,9 @@ Nada da F3 em diante funciona corretamente sem a **1.8** e a **2.6**. Se essas
 duas atrasarem, todo o resto atrasa junto — e pior, o time pode construir por cima
 de um isolamento quebrado sem perceber.
 
+A **3.1** entrou no caminho crítico na v3.1: com sqlc, nenhum endpoint da F3 pode
+ser escrito antes de a camada de repositório existir.
+
 A F5 pode correr em paralelo com F3 e F4 assim que a F1 fechar. É o único
 paralelismo real disponível: use-o para não deixar ninguém ocioso.
 
@@ -232,13 +298,17 @@ paralelismo real disponível: use-o para não deixar ninguém ocioso.
 
 1. Fase 7 inteira
 2. 4.9 (telas de configuração — pode ser feito via seed no banco)
-3. 6.10 (antecedência fixa em código)
-4. 3.7 (só cancelar, sem reagendar)
-5. 3.3 + 3.4 (disponibilidade fixa, sem cálculo de slots)
+3. 3.5 + 3.6 (disponibilidade fixa, sem cálculo de slots)
+4. 3.9 (só cancelar, sem reagendar)
+5. 7.5 / log de mensagens
 
-**Nunca corte:** 1.6, 1.8, 1.11, 2.6, 2.10, 5.5, 6.5. São os itens que separam um
-sistema funcional de um que vaza dados de um cliente para outro, aceita comando
-forjado ou manda o mesmo lembrete três vezes.
+**Nunca corte:** 1.6, 1.8, 1.11, 2.6, 2.10, 3.1, 3.10, 3.11, 5.5, 6.5, 6.11. São
+os itens que separam um sistema funcional de um que vaza dados de um cliente para
+outro, aceita comando forjado, avisa na hora errada ou manda o mesmo lembrete três
+vezes.
+
+A 6.10 saiu da lista de corte: ela é barata e serve para testar a F6 em minutos em
+vez de horas.
 
 ## Definição de pronto
 
