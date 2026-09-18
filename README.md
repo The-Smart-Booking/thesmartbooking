@@ -77,6 +77,14 @@ npm run dev
 
 ### ⏳ A partir da Fase 1: migrations, seed e isolamento
 
+Instale o goose uma vez por máquina:
+
+```bash
+go install github.com/pressly/goose/v3/cmd/goose@latest
+```
+
+Rode as migrations e o seed:
+
 ```bash
 set -a; source .env; set +a   # exporta DATABASE_URL para o shell
 goose -dir db/migrations postgres "$DATABASE_URL" up
