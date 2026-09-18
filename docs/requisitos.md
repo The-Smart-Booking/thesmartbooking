@@ -22,6 +22,7 @@ entre os dois documentos era o risco: quem copiasse daqui levava a versão bugad
 | 7 | Exclusão lógica em `clientes` e `memberships` | 7 |
 | 8 | Cookie de sessão e origem do frontend em desenvolvimento | 9 |
 | 9 | Índices de chave estrangeira explicitados | 7 |
+| 10 | Acesso a dados definido: pgx v5 + sqlc, sem ORM | 1, 6.2, 12 |
 
 ---
 
@@ -31,8 +32,8 @@ Plataforma web multi-tenant para gestão de agendamentos. Cada tenant
 (empresa/prestador) tem seus próprios usuários, serviços, horários e clientes,
 isolados dos demais. Notificações de lembrete enviadas via bot do Telegram.
 
-**Stack:** API em Go, frontend em React, banco PostgreSQL, worker de notificações
-em Go, Telegram Bot API.
+**Stack:** API em Go, frontend em React, banco PostgreSQL (acesso via pgx v5 +
+sqlc), worker de notificações em Go, Telegram Bot API.
 
 ## 2. Ordem de execução
 
@@ -193,7 +194,9 @@ requisição e a próxima pega a conexão reciclada com o tenant da anterior.
 
 **(b) Camada de repositório** — nenhuma função de acesso a dados aceita query sem
 receber `tenantID` como primeiro parâmetro. Torna o erro difícil de escrever, não
-só difícil de passar.
+só difícil de passar. As queries são geradas pelo sqlc; o pacote gerado só é
+usado por dentro de `internal/storage`, que abre a transação, chama `set_config`
+e entrega `Queries.WithTx(tx)` (ver `docs/guia-banco-de-dados.md`).
 
 **Exceções ao RLS, e por quê.** `usuarios` e `memberships` ficam de fora: são
 consultadas *antes* de existir contexto de tenant (no login o sistema ainda não
@@ -415,6 +418,7 @@ do tenant B. Sem esse teste, o isolamento é suposição, não garantia — e el
 | Bot | Único no MVP, coluna por tenant já prevista |
 | Sessão | Cookie `HttpOnly` + tabela `sessoes` |
 | Papéis | `text` + `CHECK`, não `ENUM` |
+| Acesso a dados | pgx v5 (`pgxpool`) + sqlc; sem ORM |
 
 ### 12.1 Ainda em aberto
 
