@@ -54,7 +54,7 @@ Meta: as três máquinas rodam o projeto, com CI verde e o primeiro PR mergeado.
 - [x] #6 — [F0] .env.example e carregamento de config na API · `feito` · carregamento de config adiado para a F2 (junto do #19)
 - [ ] #7 — [F0] GitHub Actions: go build, go vet, go test · `wip`
 - [x] #8 — [F0] Padrão de commit e template de PR · `feito`
-- [ ] #9 — [F1] goose e migration 001 (extensões e app.current_tenant_id) · `backlog`
+- [ ] #9 — [F1] goose e migration 001 (extensões e app.current_tenant_id) · `wip`
 - [x] #23 — [F0] Trazer requisitos, backlog e guia de BD para docs/ · `feito`
 - [x] #24 — [F0] Registrar as decisões em aberto com prazo em docs/decisoes.md · `feito`
 - [ ] #25 — [F0] Ambiente validado nas três máquinas · `ready`
