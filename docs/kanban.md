@@ -74,7 +74,7 @@ Meta: as três máquinas rodam o projeto, com CI verde e o primeiro PR mergeado.
 Meta: um `SELECT` sem `WHERE`, com o tenant definido, devolve só as linhas
 daquele tenant — provado por teste no CI.
 
-- [ ] #10 — [F1] Migration: tenants · `wip`
+- [ ] #10 — [F1] Migration: tenants · `review`
 - [ ] #11 — [F1] Migration: usuarios e memberships · `backlog`
 - [ ] #12 — [F1] Migration: clientes · `backlog`
 - [ ] #13 — [F1] Migration: servicos e disponibilidades · `backlog`
