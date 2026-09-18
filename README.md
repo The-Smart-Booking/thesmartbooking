@@ -4,7 +4,7 @@ Plataforma multi-tenant de agendamentos com notificações automáticas via Tele
 
 Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários, serviços, horários e clientes, isolados das demais. O cliente final recebe confirmação e lembrete pelo Telegram, sem precisar de conta no sistema.
 
-> 🚧 **Status:** Fase 0 — fundação, em fechamento. Já existem o ambiente Docker (PostgreSQL) e o CI. Schema e RLS entram na Fase 1.
+> 🚧 **Status:** Fase 0 concluída (ambiente Docker, CI e padrões do time). Em andamento: Fase 1 — schema do banco e isolamento por tenant. Schema e RLS entram na Fase 1.
 
 ---
 
@@ -123,8 +123,8 @@ O backlog é dividido em fases; cada sprint fecha uma fase.
 
 | Fase | Entrega | Status |
 |---|---|---|
-| F0 — Fundação | Repositório, Docker, CI, padrões do time | 🚧 |
-| F1 — Banco e isolamento | Migrations, RLS, seed com dois tenants | ⏳ |
+| F0 — Fundação | Repositório, Docker, CI, padrões do time | ✅ |
+| F1 — Banco e isolamento | Migrations, RLS, seed com dois tenants | 🚧 |
 | F2 — Autenticação e contas | Signup, login, sessão, middleware de tenant | ⏳ |
 | F3 — API de agendamentos | CRUD e regras de agendamento | ⏳ |
 | F4 — Frontend | Telas do prestador | ⏳ |

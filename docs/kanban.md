@@ -5,7 +5,7 @@ quer ver a sprint inteira sem abrir o navegador, e o **Claude Code**, que precis
 saber em que card o time está antes de escrever qualquer linha.
 
 **Atualizado em:** 17/09/2026
-**Sprint atual:** Sprint 0 — Fundação
+**Sprint atual:** Sprint 1 — Schema e isolamento
 **Board:** GitHub Projects › Smart Booking DevOps
 
 > A fonte da verdade do *status* é o GitHub Projects. Este arquivo é o espelho
@@ -18,10 +18,10 @@ saber em que card o time está antes de escrever qualquer linha.
 
 | | |
 |---|---|
-| Em andamento | #7 `GitHub Actions` (falta tornar o check obrigatório na proteção da `main`) |
+| Em andamento | — |
 | Em revisão | — |
-| Próximos a puxar (Ready) | #25 |
-| Fecha a Sprint 0 | #25 `Ambiente validado nas três máquinas` |
+| Próximos a puxar (Ready) | #9 `goose e migration 001` |
+| Fecha a Sprint 1 | #16 `RLS com FORCE, USING e WITH CHECK` |
 | Atenção | #26 (Postgres no CI) precisa entrar antes de #16 poder ser verificada |
 
 ### Para o Claude Code
@@ -44,36 +44,12 @@ revisão) · `feito`. A caixa `[x]` só é marcada quando o card chega em **feit
 
 ---
 
-## Sprint 0 — Fundação
-
-Meta: as três máquinas rodam o projeto, com CI verde e o primeiro PR mergeado.
-
-- [x] #3 — [F0] Inicializar módulo Go e estrutura de pastas · `feito`
-- [x] #4 — [F0] Branch protection na main (1 aprovação obrigatória) · `feito`
-- [x] #5 — [F0] docker-compose com postgres:16-alpine · `feito`
-- [x] #6 — [F0] .env.example e carregamento de config na API · `feito` · carregamento de config adiado para a F2 (junto do #19)
-- [ ] #7 — [F0] GitHub Actions: go build, go vet, go test · `wip`
-- [x] #8 — [F0] Padrão de commit e template de PR · `feito`
-- [ ] #9 — [F1] goose e migration 001 (extensões e app.current_tenant_id) · `backlog`
-- [x] #23 — [F0] Trazer requisitos, backlog e guia de BD para docs/ · `feito`
-- [x] #24 — [F0] Registrar as decisões em aberto com prazo em docs/decisoes.md · `feito`
-- [ ] #25 — [F0] Ambiente validado nas três máquinas · `ready`
-
-> #3: a estrutura agora é `cmd/api`. Os pacotes
-> `internal/api` e `internal/storage` (decididos na revisão de arquitetura, no
-> lugar de `internal/http` e `internal/db`) nascem nos cards que os usam.
->
-> #4 está `feito`, mas houve push direto na `main` (`181b3d6`). Confira em
-> Settings › Branches se "Do not allow bypassing the above settings" está ligado.
->
-> Não há mais branch `dev`: branch sai da `main` e volta por PR. Padrões em
-> `CONTRIBUTING.md`.
-
 ## Sprint 1 — Schema e isolamento
 
 Meta: um `SELECT` sem `WHERE`, com o tenant definido, devolve só as linhas
 daquele tenant — provado por teste no CI.
 
+- [ ] #9 — [F1] goose e migration 001 (extensões e app.current_tenant_id) · `ready`
 - [ ] #10 — [F1] Migration: tenants · `backlog`
 - [ ] #11 — [F1] Migration: usuarios e memberships · `backlog`
 - [ ] #12 — [F1] Migration: clientes · `backlog`
@@ -120,3 +96,29 @@ foi feito em quanto tempo é o que permite estimar a sprint seguinte.
 
 Cards novos entram com o número da issue, o título exato do GitHub e o status
 `backlog`.
+
+---
+
+## Concluídas
+
+### Sprint 0 — Fundação · fechada em 17/09/2026
+
+Meta: as três máquinas rodam o projeto, com CI verde e o primeiro PR mergeado.
+
+- [x] #3 — [F0] Inicializar módulo Go e estrutura de pastas · `feito`
+- [x] #4 — [F0] Branch protection na main (1 aprovação obrigatória) · `feito`
+- [x] #5 — [F0] docker-compose com postgres:16-alpine · `feito`
+- [x] #6 — [F0] .env.example e carregamento de config na API · `feito` · carregamento de config adiado para a F2 (junto do #19)
+- [x] #7 — [F0] GitHub Actions: go build, go vet, go test · `feito`
+- [x] #8 — [F0] Padrão de commit e template de PR · `feito`
+- [x] #23 — [F0] Trazer requisitos, backlog e guia de BD para docs/ · `feito`
+- [x] #24 — [F0] Registrar as decisões em aberto com prazo em docs/decisoes.md · `feito`
+- [x] #25 — [F0] Ambiente validado nas três máquinas · `feito`
+
+> #3: a estrutura é `cmd/api`. Os pacotes `internal/api` e `internal/storage`
+> (decididos na revisão de arquitetura, no lugar de `internal/http` e
+> `internal/db`) nascem nos cards que os usam.
+>
+> O fechamento da F0 foi para a `main` em push direto, sem PR, porque a proteção
+> ainda não estava ativa. Daí em diante vale o `CONTRIBUTING.md`: branch a partir
+> da `main` e PR com uma aprovação. A branch `dev` foi apagada.
