@@ -85,6 +85,7 @@ justificativa registradas em `docs/decisoes.md`.
 | 1.11 ⭑ | `[F1] Subir Postgres no CI para os testes de banco` | M | |
 | 1.12 ⭑ | `[F1] Migration: sessoes` | P | |
 | 1.13 ⭑ | `[F1] Teste: exclusão de tenant não quebra em chave estrangeira` | P | |
+| 1.14 ⭑ | `[F1] sqlc + pgx: sqlc.yaml e helper de transação com tenant` | M | |
 
 **Critérios de aceite (1.6):** tentar inserir dois agendamentos sobrepostos para o
 mesmo prestador no mesmo tenant retorna erro do banco (`23P01`), não da aplicação;
@@ -98,6 +99,12 @@ comprova os dois casos.
 **Critérios de aceite (1.11):** o workflow sobe `postgres:16-alpine` como serviço,
 roda as migrations e executa os testes que dependem de banco; o teste de
 isolamento roda conectado como `app_user`.
+
+**Critérios de aceite (1.14):** `sqlc.yaml` lê `db/migrations` como schema e
+`db/queries` como queries, gerando em `internal/storage/db` com `sql_package:
+"pgx/v5"`; `internal/storage` expõe um helper que abre transação, chama
+`set_config('app.tenant_id', $1, true)` e só então entrega `Queries.WithTx(tx)`;
+o CI roda `sqlc diff` e falha se o código gerado estiver desatualizado.
 
 > A issue 1.8 é a mais importante do backlog inteiro. **Não deve ser atribuída a
 > quem estiver aprendendo Postgres no projeto.**

@@ -16,6 +16,7 @@ Versão **1.1** · 16/09/2026
 | 7 | Nota sobre `tenants` fora do RLS e segredo por tenant | 009 |
 | 8 | Aviso sobre `NULLS NOT DISTINCT` em `telegram_chat_id` | 004 |
 | 9 | Checklist ganhou exclusão de tenant, índices de FK e e-mail duplicado | final |
+| 10 | Acesso a dados com pgx v5 + sqlc e helper de transação com tenant | Acesso a dados |
 
 ---
 
@@ -656,6 +657,98 @@ Transforme isso em teste Go e coloque no CI. **Isso exige Postgres no CI**
 tem banco. Teste de isolamento que só existe como comando manual deixa de ser
 executado na terceira semana.
 
+## Acesso a dados: pgx + sqlc
+
+**Driver:** `github.com/jackc/pgx/v5`, com pool via `pgxpool`. **Geração de
+código:** sqlc. Sem ORM: o SQL é escrito à mão em `db/queries/` e o sqlc gera
+funções Go tipadas em `internal/storage/db`. Erro de SQL aparece no
+`sqlc generate`, não em produção.
+
+```bash
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+go get github.com/jackc/pgx/v5
+```
+
+`sqlc.yaml` na raiz. O schema **são as próprias migrations** — o sqlc entende as
+anotações do goose e ignora os blocos `Down`. Nada de `schema.sql` paralelo, que
+diverge das migrations na segunda semana.
+
+```yaml
+version: "2"
+sql:
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries
+    gen:
+      go:
+        package: db
+        out: internal/storage/db
+        sql_package: pgx/v5
+        emit_pointers_for_null_types: true
+```
+
+Uma query por bloco, com nome e tipo de retorno:
+
+```sql
+-- db/queries/clientes.sql
+
+-- name: ListarClientes :many
+SELECT id, nome, criado_em
+FROM clientes
+WHERE tenant_id = $1 AND removido_em IS NULL
+ORDER BY nome;
+```
+
+O `WHERE tenant_id = $1` continua lá mesmo com RLS: é a camada (b) de defesa.
+O RLS pega o erro que escapar dela, não substitui.
+
+### O helper de transação com tenant
+
+O sqlc gera `db.New(pool)`, que roda cada query direto no pool — **sem**
+`set_config`, portanto sem tenant, portanto zero linhas (RLS falha fechado) ou,
+pior, bug silencioso nas tabelas fora do RLS. Por isso o pacote gerado só é
+usado por dentro de `internal/storage`, sempre através de um helper:
+
+```go
+func (s *Store) ComTenant(ctx context.Context, tenantID pgtype.UUID, fn func(q *db.Queries) error) error {
+    tx, err := s.pool.Begin(ctx)
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback(ctx) // no-op depois do Commit
+
+    if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1::uuid::text, true)", tenantID); err != nil {
+        return err
+    }
+    if err := fn(db.New(tx)); err != nil {
+        return err
+    }
+    return tx.Commit(ctx)
+}
+```
+
+Uso no repositório:
+
+```go
+err := s.ComTenant(ctx, tenantID, func(q *db.Queries) error {
+    clientes, err = q.ListarClientes(ctx, tenantID)
+    return err
+})
+```
+
+Regras:
+
+- **Nenhum handler importa `internal/storage/db`.** Se importar, pulou o helper.
+- **Código gerado não se edita à mão.** Mudou a query ou a migration, roda
+  `sqlc generate` e commita o resultado no mesmo PR. O CI roda `sqlc diff` e
+  falha se estiverem fora de sincronia.
+- **Tipos:** com `pgx/v5`, `uuid` vira `pgtype.UUID` e `tstzrange` vira
+  `pgtype.Range[pgtype.Timestamptz]`. Se o time preferir `google/uuid`, é um
+  `overrides` no `sqlc.yaml` — decidam antes da primeira query, não depois da
+  décima.
+- **Erros do Postgres** chegam como `*pgconn.PgError` (ver `23P01` na 007);
+  `pgx.ErrNoRows` é o "não encontrado" de `:one`.
+
 ## Checklist de conclusão da Fase 1
 
 - [ ] Todas as migrations rodam do zero em banco vazio (`goose up`)
@@ -670,6 +763,8 @@ executado na terceira semana.
 - [ ] `DELETE FROM tenants` roda sem erro de chave estrangeira *(novo)*
 - [ ] Cadastrar `Davi@x.com` e `davi@x.com` falha na segunda vez *(novo)*
 - [ ] Toda FK usada em filtro tem índice explícito *(novo)*
+- [ ] `sqlc generate` roda sem erro e `sqlc diff` passa no CI *(novo)*
+- [ ] Nenhum pacote fora de `internal/storage` importa `internal/storage/db` *(novo)*
 
 O quarto item é o mais esquecido: quase toda equipe escreve a constraint de
 sobreposição e só testa o caso que deve falhar. Se `'[)'` virar `'[]'` por

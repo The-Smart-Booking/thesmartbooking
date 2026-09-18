@@ -16,6 +16,7 @@ Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários,
 | Frontend | React + Vite + TypeScript |
 | Banco | PostgreSQL 16 |
 | Migrations | goose |
+| Acesso a dados | pgx v5 + sqlc |
 | Notificações | Telegram Bot API |
 | Ambiente | Docker Compose |
 
@@ -45,8 +46,11 @@ cmd/worker/            # consumidor da fila de notificações (F6)
 internal/config/       # leitura das variáveis de ambiente (F2)
 internal/api/          # handlers e middlewares (F2)
 internal/storage/      # repositórios — toda função recebe tenantID (F1)
+internal/storage/db/   # código gerado pelo sqlc — não editar à mão (F1)
 internal/notificador/  # interface Notificador + implementação Telegram (F5)
 db/migrations/         # goose, SQL puro (F1)
+db/queries/            # queries SQL anotadas para o sqlc (F1)
+sqlc.yaml              # configuração do sqlc (F1)
 db/seed.sql            # dois tenants fictícios (F1)
 ```
 
@@ -80,6 +84,7 @@ npm run dev
 ```bash
 set -a; source .env; set +a   # exporta DATABASE_URL para o shell
 goose -dir db/migrations postgres "$DATABASE_URL" up
+sqlc generate                 # regenera internal/storage/db a partir de db/queries
 psql "$DATABASE_URL" -f db/seed.sql
 ```
 
@@ -109,7 +114,7 @@ ROLLBACK;
 
 🔑 **Contexto de tenant.** Toda requisição abre transação e define `app.tenant_id` via `set_config(..., true)`. Nunca `SET` sem escopo local — com pool de conexões, a variável vaza para a requisição seguinte e vira vazamento de dados entre organizações.
 
-📦 **Repositórios.** Nenhuma função de acesso a dados aceita query sem receber `tenantID`. O RLS é a rede de segurança; a camada de repositório é a primeira barreira.
+📦 **Repositórios.** SQL mora em `db/queries/` e vira Go pelo sqlc (driver pgx v5). O código gerado nunca é chamado direto dos handlers: passa por `internal/storage`, onde nenhuma função aceita query sem receber `tenantID`. O RLS é a rede de segurança; a camada de repositório é a primeira barreira.
 
 🕐 **Fuso horário.** Tudo em UTC no banco (`timestamptz`). Conversão apenas na borda, usando `tenants.fuso_horario`.
 
