@@ -11,7 +11,7 @@ Documento de requisitos e decisões técnicas — **v0.5** · 18/09/2026
 |---|---|---|
 | 1 | Fases horizontais (F0–F8) trocadas pelas fatias verticais do backlog v2.1 | 10 |
 | 2 | Estimativa recalculada a partir do backlog (397h) | 13 |
-| 3 | Prazos das decisões em aberto referenciam itens do backlog | 12.1 |
+| 3 | Decisões em aberto passam a viver só em `docs/decisoes.md` | 12.1 |
 
 ## Mudanças desde a v0.3
 
@@ -432,15 +432,8 @@ usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (i
 
 ### 12.1 Ainda em aberto
 
-| Tema | Prazo limite para decidir |
-|---|---|
-| Nomes e granularidade dos papéis | Antes do middleware de autorização (2.7) |
-| Antecedência padrão do lembrete | Antes de tornar configurável por tenant (4.6) |
-| Agendamento por link público (cliente sem conta) | Antes da Fatia 2 |
-| Quem entrega o deep link ao cliente | Antes da tela de cliente (3.8) |
-| Hospedagem | Antes da Fatia 7 |
-
-Registro e prazos em `docs/decisoes.md`.
+Lista viva, com prazo e responsável, em `docs/decisoes.md`. Não é repetida aqui
+para as duas listas não divergirem.
 
 ## 13. Estimativa de prazo
 
