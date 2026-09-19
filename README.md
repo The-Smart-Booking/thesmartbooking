@@ -4,7 +4,7 @@ Plataforma multi-tenant de agendamentos com notificações automáticas via Tele
 
 Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários, serviços, horários e clientes, isolados das demais. O cliente final recebe confirmação e lembrete pelo Telegram, sem precisar de conta no sistema.
 
-> 🚧 **Status:** Fase 0 concluída (ambiente Docker, CI e padrões do time). Em andamento: Fase 1 — schema do banco e isolamento por tenant. Schema e RLS entram na Fase 1.
+> 🚧 **Status:** Sprint 0 concluída (ambiente Docker, CI e padrões do time). Em andamento: Sprint 1 — fim da Fatia 0 (schema, RLS e seed) e base do frontend.
 
 ---
 
@@ -42,16 +42,16 @@ thesmartbooking/
 Estrutura-alvo (cada pasta nasce no card que a usa):
 
 ```
-cmd/worker/            # consumidor da fila de notificações (F6)
-internal/config/       # leitura das variáveis de ambiente (F2)
-internal/api/          # handlers e middlewares (F2)
-internal/storage/      # repositórios — toda função recebe tenantID (F1)
-internal/storage/db/   # código gerado pelo sqlc — não editar à mão (F1)
-internal/notificador/  # interface Notificador + implementação Telegram (F5)
-db/migrations/         # goose, SQL puro (F1)
-db/queries/            # queries SQL anotadas para o sqlc (F1)
-sqlc.yaml              # configuração do sqlc (F1)
-db/seed.sql            # dois tenants fictícios (F1)
+cmd/worker/            # consumidor da fila de notificações (T3)
+internal/config/       # leitura das variáveis de ambiente (T1)
+internal/api/          # handlers e middlewares (T1)
+internal/storage/      # repositórios — toda função recebe tenantID (T1)
+internal/storage/db/   # código gerado pelo sqlc — não editar à mão (T1)
+internal/notificador/  # interface Notificador + implementação Telegram (T3)
+db/migrations/         # goose, SQL puro (T0)
+db/queries/            # queries SQL anotadas para o sqlc (T1)
+sqlc.yaml              # configuração do sqlc (T1)
+db/seed.sql            # dois tenants fictícios (T0)
 ```
 
 ---
@@ -79,12 +79,12 @@ npm install
 npm run dev
 ```
 
-### ⏳ A partir da Fase 1: migrations, seed e isolamento
+### ⏳ A partir da Fatia 0: migrations, seed e isolamento
 
 ```bash
 set -a; source .env; set +a   # exporta DATABASE_URL para o shell
 goose -dir db/migrations postgres "$DATABASE_URL" up
-sqlc generate                 # regenera internal/storage/db a partir de db/queries
+sqlc generate                 # a partir da T1: regenera internal/storage/db
 psql "$DATABASE_URL" -f db/seed.sql
 ```
 
@@ -118,25 +118,24 @@ ROLLBACK;
 
 🕐 **Fuso horário.** Tudo em UTC no banco (`timestamptz`). Conversão apenas na borda, usando `tenants.fuso_horario`.
 
-🌿 **Commits, branches e PR.** Commit `<tipo> - <descrição>`, branch `<tipo>/f<fase>-<descrição>` a partir da `main`, um PR por card com `Closes #N`, aprovação de outro integrante e CI verde. Todo PR move o card no GitHub Projects e atualiza `docs/kanban.md`. Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
+🌿 **Commits, branches e PR.** Commit `<tipo> - <descrição>`, branch `<tipo>/t<fatia>-<descrição>` a partir da `main`, um PR por card com `Closes #N`, aprovação de outro integrante e CI verde. Todo PR move o card no GitHub Projects e atualiza `docs/kanban.md`. Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
 ## 🗺️ Roteiro
 
-O backlog é dividido em fases; cada sprint fecha uma fase.
+O backlog é dividido em fatias verticais: cada uma atravessa banco, API e frontend e termina em algo demonstrável. Uma fatia pode levar mais de uma sprint.
 
-| Fase | Entrega | Status |
+| Fatia | Entrega | Status |
 |---|---|---|
-| F0 — Fundação | Repositório, Docker, CI, padrões do time | ✅ |
-| F1 — Banco e isolamento | Migrations, RLS, seed com dois tenants | 🚧 |
-| F2 — Autenticação e contas | Signup, login, sessão, middleware de tenant | ⏳ |
-| F3 — API de agendamentos | CRUD e regras de agendamento | ⏳ |
-| F4 — Frontend | Telas do prestador | ⏳ |
-| F5 — Bot: vinculação | Vincular cliente ao Telegram | ⏳ |
-| F6 — Worker de notificações | Confirmação e lembrete automáticos | ⏳ |
-| F7 — Interação pelo bot | Opcional no MVP | ⏳ |
-| F8 — Entrega | Deploy e documentação final | ⏳ |
+| T0 — Fundação | Repositório, Docker, CI, migrations, RLS, seed com dois tenants | 🚧 |
+| T1 — Agendar | Criar e listar agendamentos no navegador (tenant fixo, sem login) | ⏳ |
+| T2 — Entrar | Signup, login, sessão e isolamento real entre tenants | ⏳ |
+| T3 — Avisar | Vincular cliente ao Telegram e enviar confirmação | ⏳ |
+| T4 — Lembrar | Lembrete automático X horas antes | ⏳ |
+| T5 — Cancelar | Cancelar e reagendar, inclusive pelo bot | ⏳ |
+| T6 — Configurar | Serviços, disponibilidades e slots livres | ⏳ |
+| T7 — Entregar | Deploy e documentação final | ⏳ |
 
 Legenda: ✅ concluída · 🚧 em andamento · ⏳ não iniciada
 

@@ -1,9 +1,17 @@
 # Requisitos — Smart Booking
 
 Sistema de agendamentos multi-tenant com notificação via Telegram.
-Documento de requisitos e decisões técnicas — **v0.4** · 16/09/2026
+Documento de requisitos e decisões técnicas — **v0.5** · 18/09/2026
 
 > Fonte da verdade: este arquivo. A pasta do Drive é histórico.
+
+## Mudanças desde a v0.4
+
+| # | O que mudou | Onde |
+|---|---|---|
+| 1 | Fases horizontais (F0–F8) trocadas pelas fatias verticais do backlog v2.1 | 10 |
+| 2 | Estimativa recalculada a partir do backlog (397h) | 13 |
+| 3 | Prazos das decisões em aberto referenciam itens do backlog | 12.1 |
 
 ## Mudanças desde a v0.3
 
@@ -376,24 +384,26 @@ o cookie `SameSite=Lax` não é enviado nas chamadas da SPA. Use o proxy do Vite
 (`server.proxy`) para a API responder na mesma origem — a alternativa
 (`SameSite=None` + CORS com credenciais) obriga a implementar CSRF já no MVP.
 
-## 10. Fases
+## 10. Fatias
 
-| Fase | Entrega | Depende de |
+O backlog é fatiado verticalmente: cada fatia atravessa banco, API e frontend e
+termina em algo demonstrável. Detalhe, issues e critérios em `docs/backlog.md`.
+
+| Fatia | Entrega | Depende de |
 |---|---|---|
-| F0 | Fundação: repositório, ambiente local, CI, convenções | — |
-| F1 | Schema com `tenant_id`, RLS e constraint de sobreposição | F0 |
-| F2 | Auth: cadastro, login, sessão, middleware de tenant | F1 |
-| F3 | API: CRUD de serviços, disponibilidades e agendamentos | F2 |
-| F4 | Frontend: login, formulário e lista | F3 |
-| F5 | Bot: BotFather, deep link, webhook de `/start` | F1 |
-| F6 | Worker com idempotência e tratamento de 429 | F3 e F5 |
-| F7 | Botões inline de confirmar/cancelar | F6 |
-| F8 | Deploy e documentação | F3–F7 |
+| T0 Fundação | Repositório, CI, schema com `tenant_id`, RLS, constraint de sobreposição, seed | — |
+| T1 Agendar | Criar e listar agendamentos no navegador, tenant fixo e sem login | T0 |
+| T2 Entrar | Signup, login, sessão, middleware de tenant e papéis | T1 |
+| T3 Avisar | Vinculação por deep link e confirmação imediata no Telegram | T2 |
+| T4 Lembrar | Worker com outbox, idempotência, backoff e tratamento de 429/403 | T3 |
+| T5 Cancelar | Cancelar e reagendar, inclusive por botão inline | T4 |
+| T6 Configurar | Serviços, disponibilidades, slots e fuso por tenant | T1 |
+| T7 Entregar | Deploy e documentação | T0–T6 |
 
-**Teste que precisa existir antes da F4:** criar dois tenants, popular ambos,
-autenticar como usuário do tenant A e verificar que nenhum endpoint retorna dado
-do tenant B. Sem esse teste, o isolamento é suposição, não garantia — e ele exige
-**Postgres no CI**, não só `go test`.
+**Teste que fecha a Fatia 2:** criar dois tenants, popular ambos, autenticar como
+usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (item
+2.13). Sem esse teste, o isolamento é suposição, não garantia — e ele exige
+**Postgres no CI** (item 0.17), não só `go test`.
 
 ## 11. Riscos
 
@@ -424,35 +434,41 @@ do tenant B. Sem esse teste, o isolamento é suposição, não garantia — e el
 
 | Tema | Prazo limite para decidir |
 |---|---|
-| Nomes e granularidade dos papéis | Antes do middleware de autorização |
-| Antecedência padrão do lembrete | Antes de tornar configurável por tenant |
-| Agendamento por link público (cliente sem conta) | Antes da F4 |
-| Quem entrega o deep link ao cliente | Antes da tela de cliente |
-| Hospedagem | Antes da F8 |
+| Nomes e granularidade dos papéis | Antes do middleware de autorização (2.7) |
+| Antecedência padrão do lembrete | Antes de tornar configurável por tenant (4.6) |
+| Agendamento por link público (cliente sem conta) | Antes da Fatia 2 |
+| Quem entrega o deep link ao cliente | Antes da tela de cliente (3.8) |
+| Hospedagem | Antes da Fatia 7 |
 
 Registro e prazos em `docs/decisoes.md`.
 
 ## 13. Estimativa de prazo
 
-Base: 3 pessoas × ~5h/semana = 15h/semana nominais.
+Base: 3 pessoas × ~5h/semana = 15h/semana nominais. Esforço por fatia no
+`docs/backlog.md` (§Cronograma).
 
-| Fase | Esforço |
+| Fatia | Esforço |
 |---|---|
-| F0 Fundação | 15h |
-| F1 Banco + RLS | 38h |
-| F2 Auth + tenant | 43h |
-| F3 API | 52h |
-| F4 Frontend | 57h |
-| F5 Bot | 39h |
-| F6 Worker | 54h |
-| F7 Botões inline | 27h |
-| F8 Entrega | 32h |
-| **Total** | **~357h** |
+| T0 Fundação | 63h |
+| T1 Agendar | 46h |
+| T2 Entrar | 59h |
+| T3 Avisar | 68h |
+| T4 Lembrar | 42h |
+| T5 Cancelar | 37h |
+| T6 Configurar | 50h |
+| T7 Entregar | 32h |
+| **Total** | **~397h** |
 
-Escopo completo: ~24 semanas. MVP (sem F7 e sem os itens cortáveis): ~19 semanas.
-Com 70% de eficiência real: ~27 semanas. **Número a comunicar: 5 a 6 meses.**
+Escopo completo: ~27 semanas nominais, ~38 com 70% de eficiência real. Com os
+cortes do backlog (Fatia 6 exceto 6.4, botões inline, log e reagendamento), ~330h:
+~22 semanas nominais, ~32 realistas.
+
+**Revisar o prazo comunicado.** A v0.4 dizia "5 a 6 meses" com base em 357h. Com
+o backlog atual, mesmo o escopo cortado passa de 7 meses no ritmo realista — ou o
+time sobe as horas semanais, ou corta mais, ou comunica outro prazo.
 
 Dois fatores que puxam para cima e não aparecem na conta: a curva de aprendizado
-de Go (três pessoas ao mesmo tempo) e o fato de F1 e F2 quase não paralelizarem.
-Nas primeiras ~8 semanas o time roda com uma ou duas pessoas produtivas; só a
-partir da F3 abrem três frentes.
+de Go (três pessoas ao mesmo tempo) e o fato de as Fatias 0 e 1 quase não
+paralelizarem. Nas primeiras ~8 semanas o time roda com uma ou duas pessoas
+produtivas no backend; o frontend base (1.7–1.9) é o que ocupa a terceira. A
+partir da Fatia 3 abrem três frentes.

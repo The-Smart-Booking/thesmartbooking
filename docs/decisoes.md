@@ -8,8 +8,8 @@ Quando uma decisão for tomada: preencha a coluna **Decisão**, mude o status pa
 
 | Tema | Prazo limite para decidir | Responsável | Status | Decisão |
 |---|---|---|---|---|
-| Nomes e granularidade dos papéis | Antes do middleware de autorização (F2) | | aberta | |
-| Antecedência padrão do lembrete | Antes de tornar configurável por tenant | | aberta | |
-| Agendamento por link público (cliente sem conta) | Antes da F4 | | aberta | |
-| Quem entrega o deep link ao cliente | Antes da tela de cliente | | aberta | |
-| Hospedagem | Antes da F8 | | aberta | |
+| Nomes e granularidade dos papéis | Antes do middleware de autorização (2.7, Fatia 2) | | aberta | |
+| Antecedência padrão do lembrete | Antes de tornar configurável por tenant (4.6, Fatia 4) | | aberta | |
+| Agendamento por link público (cliente sem conta) | Antes da Fatia 2 (o frontend já nasce na Fatia 1) | | aberta | |
+| Quem entrega o deep link ao cliente | Antes da tela de cliente (3.8, Fatia 3) | | aberta | |
+| Hospedagem | Antes da Fatia 7 | | aberta | |

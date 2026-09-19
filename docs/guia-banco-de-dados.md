@@ -1,7 +1,16 @@
 # Guia de Banco de Dados — Smart Booking
 
-Fase 1 do backlog (issues 1.1 a 1.14). Complementa `docs/requisitos.md` (v0.4).
-Versão **1.1** · 16/09/2026
+Fatia 0 do backlog (itens 0.7 a 0.18) e base de acesso a dados da Fatia 1 (1.2 e
+1.3). Complementa `docs/requisitos.md` (v0.5).
+Versão **1.2** · 18/09/2026
+
+## Mudanças desde a v1.1
+
+- Referências a fases trocadas pelas fatias do backlog v2.1. Nenhuma mudança de
+  schema nem de acesso a dados: continua pgx v5 + sqlc, sem ORM.
+- O helper `ComTenant` é chamado pelo middleware da 1.3 (uma transação por
+  requisição).
+- Checklist dividido: Fatia 0 (schema e RLS) e Fatia 1 (sqlc e repositório).
 
 ## Mudanças desde a v1.0
 
@@ -366,7 +375,7 @@ silenciosamente o histórico dele. O banco recusa a operação destrutiva por pa
 a aplicação decide o que fazer (e, com `removido_em`, a resposta é exclusão
 lógica).
 
-**A constraint de exclusão** é o item mais importante da Fase 1 depois do RLS.
+**A constraint de exclusão** é o item mais importante da Fatia 0 depois do RLS.
 Duas requisições simultâneas passam pela validação da aplicação e gravam as duas —
 só o banco resolve isso.
 
@@ -540,7 +549,7 @@ Duas consequências a carregar:
 ## 010 — sessoes
 
 > Depende da decisão "cookie de sessão vs JWT" (requisitos, seção 9). Com a
-> decisão atual — cookie `HttpOnly` —, esta migration é obrigatória antes da F2.
+> decisão atual — cookie `HttpOnly` —, esta migration entra na Fatia 2 (item 2.14), antes do login (2.3).
 
 ```sql
 -- +goose Up
@@ -591,7 +600,7 @@ DROP TABLE convites;
 ```
 
 Mesmo padrão do `vinculo_token`: token único, com prazo e de uso único. RF12 é
-prioridade média — a migration pode esperar a F2, mas a tabela precisa existir no
+prioridade média e ainda não tem item no backlog — a migration pode esperar, mas a tabela precisa existir no
 desenho desde já para ninguém inventar convite por e-mail sem registro.
 
 ## Usuário de aplicação (`app_user`)
@@ -653,7 +662,7 @@ Rode conectado como `app_user`. Se o segundo `SELECT` retornar linha ou o `INSER
 passar, o RLS não está ativo — provavelmente por uma das três armadilhas.
 
 Transforme isso em teste Go e coloque no CI. **Isso exige Postgres no CI**
-(`services: postgres` no workflow): o job atual roda só `go build/vet/test` e não
+(`services: postgres` no workflow, item 0.17): o job atual roda só `go build/vet/test` e não
 tem banco. Teste de isolamento que só existe como comando manual deixa de ser
 executado na terceira semana.
 
@@ -727,7 +736,12 @@ func (s *Store) ComTenant(ctx context.Context, tenantID pgtype.UUID, fn func(q *
 }
 ```
 
-Uso no repositório:
+Na Fatia 1 quem chama o `ComTenant` é o middleware da 1.3: uma transação por
+requisição, com o tenant vindo de `TENANT_FIXO` (e da sessão a partir da Fatia 2).
+O repositório recebe o `*db.Queries` já amarrado ao `tx` pelo `context`, nunca o
+pool.
+
+Uso direto, fora de uma requisição HTTP (testes, scripts):
 
 ```go
 err := s.ComTenant(ctx, tenantID, func(q *db.Queries) error {
@@ -749,7 +763,7 @@ Regras:
 - **Erros do Postgres** chegam como `*pgconn.PgError` (ver `23P01` na 007);
   `pgx.ErrNoRows` é o "não encontrado" de `:one`.
 
-## Checklist de conclusão da Fase 1
+## Checklist de conclusão da Fatia 0
 
 - [ ] Todas as migrations rodam do zero em banco vazio (`goose up`)
 - [ ] Todas as migrations revertem (`goose down-to 0`) e rodam de novo
@@ -757,14 +771,12 @@ Regras:
 - [ ] Inserir agendamentos consecutivos (9–10h e 10–11h) **funciona**
 - [ ] Agendamento cancelado libera o horário
 - [ ] FK composta recusa cliente de outro tenant
-- [ ] Teste de isolamento passa conectado como `app_user`
+- [ ] Teste de isolamento passa conectado como `app_user`, no CI (0.17)
 - [ ] `app_user` não é dono de tabela nem tem `BYPASSRLS`
 - [ ] Seed cria dois tenants com dados fictícios
 - [ ] `DELETE FROM tenants` roda sem erro de chave estrangeira *(novo)*
 - [ ] Cadastrar `Davi@x.com` e `davi@x.com` falha na segunda vez *(novo)*
 - [ ] Toda FK usada em filtro tem índice explícito *(novo)*
-- [ ] `sqlc generate` roda sem erro e `sqlc diff` passa no CI *(novo)*
-- [ ] Nenhum pacote fora de `internal/storage` importa `internal/storage/db` *(novo)*
 
 O quarto item é o mais esquecido: quase toda equipe escreve a constraint de
 sobreposição e só testa o caso que deve falhar. Se `'[)'` virar `'[]'` por
@@ -774,3 +786,11 @@ O décimo é novo e vale explicar: `tenants` cascateia para `clientes`, mas
 `agendamentos` referencia `clientes` com `RESTRICT`. Dependendo da ordem em que o
 Postgres processa, a exclusão do tenant pode falhar. Descubram isso num teste, não
 na véspera da entrega.
+
+## Checklist da Fatia 1 (1.2 e 1.3)
+
+- [ ] `sqlc generate` roda sem erro e `sqlc diff` passa no CI
+- [ ] Nenhum pacote fora de `internal/storage` importa `internal/storage/db`
+- [ ] Duas requisições seguidas na mesma conexão do pool, com tenants diferentes,
+      não se enxergam
+- [ ] Nenhum `SET app.tenant_id` no repositório fora de `set_config(..., true)`
