@@ -12,14 +12,14 @@ Regras de trabalho do time. Valem para os três integrantes e para o Claude Code
    ```bash
    git switch main
    git pull
-   git switch -c feat/f1-migration-clientes
+   git switch -c feat/t0-migration-clientes
    ```
 
 3. Faça commits pequenos, no padrão abaixo.
 4. Suba a branch e abra o PR **para a `main`**:
 
    ```bash
-   git push -u origin feat/f1-migration-clientes
+   git push -u origin feat/t0-migration-clientes
    ```
 
 5. Mova o card para **In review** e peça revisão a outro integrante.
@@ -68,20 +68,21 @@ ci - roda go test em todo PR
 ## Branches
 
 ```
-<tipo>/f<fase>-<descricao-com-hifens>
+<tipo>/t<fatia>-<descricao-com-hifens>
 ```
 
 - `<tipo>`: o mesmo da tabela de commits.
-- `<fase>`: número da fase do card (`[F0]` → `f0`, `[F1]` → `f1`).
+- `<fatia>`: número da fatia do card (`[T0]` → `t0`, `[T1]` → `t1`).
+- Branches antigas com `f<fase>` (anteriores à troca para fatias) ficam como estão.
 - Descrição curta, minúsculas, **sem espaços e sem acento** (o Git não aceita espaço).
 
 Exemplos:
 
 ```
-chore/f0-config-api
-docs/f0-padrao-contribuicao
-feat/f1-migration-clientes
-fix/f2-sessao-expirada
+feat/t0-migration-clientes
+feat/t1-config-tenant-fixo
+build/t1-setup-roteamento-web
+fix/t2-sessao-expirada
 ```
 
 ---
@@ -89,7 +90,7 @@ fix/f2-sessao-expirada
 ## Pull requests
 
 - **Um PR por card.**
-- Título: o mesmo da issue — `[F1] Migration: clientes`.
+- Título: o mesmo da issue — `[T0] 0.10 Migration: clientes`.
 - Descrição com `Closes #N` (o template já traz o campo).
 - Precisa de **1 aprovação de outro integrante** e **CI verde** para mergear.
 - Merge por **squash**; a mensagem final segue o padrão de commit.

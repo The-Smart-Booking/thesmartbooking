@@ -1,10 +1,12 @@
 # Backlog
 
-## Organizado por fatias verticais — v2.0
+## Organizado por fatias verticais — v2.1 · 18/09/2026
 
-Complementa `sistema-agendamentos-requisitos.md` (v0.3) e `guia-banco-de-dados.md`.
+Complementa `docs/requisitos.md` (v0.5) e `docs/guia-banco-de-dados.md` (v1.2).
 
 > **Mudança desde a v1.0:** o backlog era fatiado horizontalmente (banco → auth → API → frontend → bot). Agora é fatiado **verticalmente**: cada fatia atravessa todas as camadas e termina em algo demonstrável. As issues são quase as mesmas; mudou o agrupamento, a ordem e o critério de conclusão de cada bloco.
+
+> **Mudanças da v2.1:** voltaram cinco itens das revisões de arquitetura de 16 e 17/09 que a v2.0 não trazia — Postgres no CI (0.17), teste de exclusão de tenant (0.18), migration `sessoes` (2.14), normalização de e-mail (2.15) e `secret_token` no webhook (3.15). A Fatia 0 ganhou coluna de status. A decisão de sessão (cookie `HttpOnly`) já estava tomada e deixou de aparecer como pendente. Cronograma recalculado.
 
 ---
 
@@ -12,7 +14,7 @@ Complementa `sistema-agendamentos-requisitos.md` (v0.3) e `guia-banco-de-dados.m
 
 No arranjo anterior, nada funcionava ponta a ponta até a semana ~15. Se aparecesse uma demonstração na semana 8, o time mostraria migrations e requisições no Postman. Além disso, todos os erros de integração apareceriam juntos, no fim, sem prazo para corrigir.
 
-Fatiando vertical, existe sistema funcionando na semana ~7 e ele cresce em capacidade, não em camadas.
+Fatiando vertical, existe sistema funcionando na semana ~8 e ele cresce em capacidade, não em camadas.
 
 **O que isso custa** — e não é zero:
 
@@ -27,36 +29,41 @@ Fatiando vertical, existe sistema funcionando na semana ~7 e ele cresce em capac
 ## Como usar
 
 - Cada item vira **uma issue**.
-- Campos do GitHub Projects: `Fatia` (0 a 7) e `Tamanho` (P ≈ 2h, M ≈ 5h, G ≈ 10h).
-- Título no formato `[T3] Handler do /start: resolve token e grava chat_id`.
+- Campos do GitHub Projects: `Fatia` (0 a 7) e `Tamanho` (P ≈ 2h, M ≈ 5h, G ≈ 10h). Label `fatia-N`; a sprint mora na milestone.
+- Título no formato `[T3] 3.6 Handler do /start: resolve token e grava chat_id` — prefixo da fatia + número do item.
+- Uma fatia pode ocupar mais de uma sprint; o status de cada card está em `docs/kanban.md`.
 - **Crie as issues de uma fatia por vez.** Backlog completo no dia 1 vira paisagem.
 
 ---
 
-## FATIA 0 — Fundação · ~56h · sem entrega demonstrável
+## FATIA 0 — Fundação · ~63h · sem entrega demonstrável
 
 Único bloco horizontal do projeto. Ao final, o banco está correto e o CI funciona; não há nada para mostrar a um usuário, e tudo bem.
 
-| #    | Issue | Tam. |
-|------|-------|------|
-| 0.1  | `[T0] Criar repositório, README e estrutura de pastas` | P |
-| 0.2  | `[T0] Branch protection na main (1 aprovação obrigatória)` | P |
-| 0.3  | `[T0] docker-compose com postgres:16-alpine` | P |
-| 0.4  | `[T0] .env.example e carregamento de config na aplicação` | P |
-| 0.5  | `[T0] GitHub Actions: go build, go vet, go test` | M |
-| 0.6  | `[T0] Padrão de commit e template de PR` | P |
-| 0.7  | `[T0] Configurar goose + migration 001 (extensões e app.current_tenant_id)` | P |
-| 0.8  | `[T0] Migration: tenants` | M |
-| 0.9  | `[T0] Migration: usuarios e memberships` | M |
-| 0.10 | `[T0] Migration: clientes` | M |
-| 0.11 | `[T0] Migration: servicos e disponibilidades` | M |
-| 0.12 | `[T0] Migration: agendamentos + constraint de sobreposição + trigger` | M |
-| 0.13 | `[T0] Migration: notificacoes (outbox) com UNIQUE(agendamento_id, tipo, versao)` | M |
-| 0.14 | `[T0] Migration: RLS com FORCE, USING e WITH CHECK em todas as tabelas` | G |
-| 0.15 | `[T0] Script de init: app_user sem BYPASSRLS e grants` | P |
-| 0.16 | `[T0] Seed com dois tenants fictícios e UUIDs fixos` | P |
+| #    | Issue | Tam. | Status |
+|------|-------|------|--------|
+| 0.1  | `[T0] Criar repositório, README e estrutura de pastas` | P | ✅ Sprint 0 |
+| 0.2  | `[T0] Branch protection na main (1 aprovação obrigatória)` | P | ✅ Sprint 0 |
+| 0.3  | `[T0] docker-compose com postgres:16-alpine` | P | ✅ Sprint 0 |
+| 0.4  | `[T0] .env.example e carregamento de config na aplicação` | P | ✅ Sprint 0 (config passou para a 1.1) |
+| 0.5  | `[T0] GitHub Actions: go build, go vet, go test` | M | ✅ Sprint 0 |
+| 0.6  | `[T0] Padrão de commit e template de PR` | P | ✅ Sprint 0 |
+| 0.7  | `[T0] Configurar goose + migration 001 (extensões e app.current_tenant_id)` | P | PR #32 em revisão |
+| 0.8  | `[T0] Migration: tenants` | M | PR #33 em revisão |
+| 0.9  | `[T0] Migration: usuarios e memberships` | M | |
+| 0.10 | `[T0] Migration: clientes` | M | |
+| 0.11 | `[T0] Migration: servicos e disponibilidades` | M | |
+| 0.12 | `[T0] Migration: agendamentos + constraint de sobreposição + trigger` | M | |
+| 0.13 | `[T0] Migration: notificacoes (outbox) com UNIQUE(agendamento_id, tipo, versao)` | M | |
+| 0.14 | `[T0] Migration: RLS com FORCE, USING e WITH CHECK em todas as tabelas` | G | |
+| 0.15 | `[T0] Script de init: app_user sem BYPASSRLS e grants` | P | |
+| 0.16 | `[T0] Seed com dois tenants fictícios e UUIDs fixos` | P | |
+| 0.17 | `[T0] Subir Postgres no CI para os testes de banco` | M | |
+| 0.18 | `[T0] Teste: exclusão de tenant não quebra em chave estrangeira` | P | |
 
-**Critério de conclusão da fatia:** o checklist final do `guia-banco-de-dados.md` passa inteiro — incluindo o item que quase todo time esquece, que é confirmar que agendamentos consecutivos (9-10h e 10-11h) **funcionam**.
+**Critério de conclusão da fatia:** o checklist da Fatia 0 no `guia-banco-de-dados.md` passa inteiro — incluindo o item que quase todo time esquece, que é confirmar que agendamentos consecutivos (9-10h e 10-11h) **funcionam**.
+
+> **0.17 destrava o resto.** Sem Postgres no CI, o teste de isolamento da 0.14 e os testes de repositório da 1.2 e 1.3 só rodam na máquina de quem escreveu. Pode entrar assim que a 0.7 for mergeada.
 
 > **0.14 é a issue mais importante do projeto.** Não atribua a quem está aprendendo Postgres agora.
 
@@ -85,9 +92,13 @@ Fatiando vertical, existe sistema funcionando na semana ~7 e ele cresce em capac
 
 > **Cuidado:** 1.3 precisa estar certo desde já. Se alguém usar `SET` em vez de `SET LOCAL` / `set_config(..., true)`, o bug fica dormindo até existir concorrência real e vira vazamento entre tenants.
 
+**Acesso a dados:** pgx v5 + sqlc, sem ORM. A 1.2 cria `sqlc.yaml`, `db/queries/` e `internal/storage`; a 1.3 usa o helper `ComTenant` do `guia-banco-de-dados.md` (§Acesso a dados) para abrir a transação da requisição.
+
+**Paralelismo:** 1.7, 1.8 e 1.9 não dependem do banco e podem andar junto com o fim da Fatia 0.
+
 ---
 
-## FATIA 2 — Entrar · ~55h · 🎯 multi-tenant real
+## FATIA 2 — Entrar · ~59h · 🎯 multi-tenant real
 
 **Entrega:** dois usuários de tenants diferentes fazem login e cada um vê apenas a própria agenda.
 
@@ -106,14 +117,18 @@ Fatiando vertical, existe sistema funcionando na semana ~7 e ele cresce em capac
 | 2.11 | `[T2] Layout autenticado com indicação do tenant ativo` | M |
 | 2.12 | `[T2] Remover TENANT_FIXO e PRESTADOR_FIXO do config` | P |
 | 2.13 | `[T2] Teste automatizado de isolamento entre tenants em todos os endpoints` | M |
+| 2.14 | `[T2] Migration: sessoes` | P |
+| 2.15 | `[T2] Normalizar e-mail (trim + minúsculas) no cadastro e no login` | P |
 
-**Decisão travada por esta fatia:** sessão com cookie `HttpOnly` ou JWT. Precisa estar resolvida antes da 2.3.
+**Sessão já decidida:** cookie `HttpOnly` + `Secure` + `SameSite=Lax` com a tabela `sessoes` (`requisitos.md` §9). Por isso a 2.14 vem antes da 2.3.
+
+**Decisão com prazo nesta fatia:** nomes e granularidade dos papéis, antes da 2.7 (`docs/decisoes.md`).
 
 **Critério de conclusão:** 2.13 passa no CI. Sem esse teste verde, o isolamento é suposição, não garantia — e as fatias seguintes vão construir por cima dele.
 
 ---
 
-## FATIA 3 — Avisar · ~66h · 🎯 canal de notificação validado
+## FATIA 3 — Avisar · ~68h · 🎯 canal de notificação validado
 
 **Entrega:** criar um agendamento e o cliente receber a confirmação no Telegram. Envio imediato, sem agendador — o que valida o canal inteiro sem depender do worker temporizado.
 
@@ -133,8 +148,11 @@ Fatiando vertical, existe sistema funcionando na semana ~7 e ele cresce em capac
 | 3.12 | `[T3] Estrutura do worker: loop periódico e encerramento gracioso` | M |
 | 3.13 | `[T3] Enfileirar notificação de confirmação na transação de criação` | M |
 | 3.14 | `[T3] Montar texto das mensagens` | M |
+| 3.15 | `[T3] Autenticar o webhook com secret_token (RNF10)` | P |
 
-**A fatia mais pesada do projeto.** Se o prazo apertar, ela é candidata a quebrar em duas: vinculação (3.1–3.9) e envio (3.10–3.14). A primeira metade sozinha já é demonstrável — o cliente abre o link e o sistema mostra "vinculado".
+**A fatia mais pesada do projeto.** Se o prazo apertar, ela é candidata a quebrar em duas: vinculação (3.1–3.9 e 3.15) e envio (3.10–3.14). A primeira metade sozinha já é demonstrável — o cliente abre o link e o sistema mostra "vinculado".
+
+> **3.15 entra junto com a 3.4.** O endpoint é público: sem `secret_token`, aceita `/start` e `callback_query` forjados por qualquer um (`requisitos.md` §8.5).
 
 > **3.9 não é cosmético.** Sem ele, o prestador acha que o lembrete foi enviado quando o cliente sequer é alcançável. Precisa distinguir "nunca vinculou" de "bloqueou o bot" — são estados diferentes na tabela.
 
@@ -219,19 +237,19 @@ A 15h/semana nominais, com ~70% de eficiência real (~10,5h/semana):
 
 | Fatia        | Esforço  | Nominal     | Realista    |
 |--------------|----------|-------------|-------------|
-| 0 Fundação   | 56h      | sem. 1–4    | sem. 1–5    |
-| 1 Agendar    | 46h      | sem. 5–7    | sem. 6–10   |
-| 2 Entrar     | 55h      | sem. 8–11   | sem. 11–15  |
-| 3 Avisar     | 66h      | sem. 12–16  | sem. 16–22  |
-| 4 Lembrar    | 42h      | sem. 17–19  | sem. 23–26  |
-| 5 Cancelar   | 37h      | sem. 20–22  | sem. 27–30  |
-| 6 Configurar | 50h      | sem. 23–25  | sem. 31–34  |
-| 7 Entregar   | 32h      | sem. 26–27  | sem. 35–37  |
-| **Total**    | **384h** | **~26 sem.** | **~37 sem.** |
+| 0 Fundação   | 63h      | sem. 1–5    | sem. 1–6    |
+| 1 Agendar    | 46h      | sem. 6–8    | sem. 7–11   |
+| 2 Entrar     | 59h      | sem. 9–12   | sem. 12–16  |
+| 3 Avisar     | 68h      | sem. 13–16  | sem. 17–23  |
+| 4 Lembrar    | 42h      | sem. 17–19  | sem. 24–27  |
+| 5 Cancelar   | 37h      | sem. 20–21  | sem. 28–30  |
+| 6 Configurar | 50h      | sem. 22–25  | sem. 31–35  |
+| 7 Entregar   | 32h      | sem. 26–27  | sem. 36–38  |
+| **Total**    | **397h** | **~27 sem.** | **~38 sem.** |
 
-O total subiu de 380h para 384h: é o custo do retrabalho de fatiar vertical. Em troca, a primeira demonstração sai na semana ~7 em vez da semana ~15.
+O total subiu de 380h para 384h com o retrabalho de fatiar vertical, e para 397h com os itens reincorporados na v2.1. Em troca, a primeira demonstração sai na semana ~8 em vez da semana ~15.
 
-**Paralelismo:** as Fatias 0 e 1 quase não paralelizam — trabalho serial com três pessoas em cima. A partir da Fatia 3 abrem duas ou três frentes (bot / worker / frontend).
+**Paralelismo:** as Fatias 0 e 1 quase não paralelizam — trabalho serial com três pessoas em cima. A exceção é o frontend base (1.7–1.9), que não depende do banco. A partir da Fatia 3 abrem duas ou três frentes (bot / worker / frontend).
 
 ---
 
@@ -242,7 +260,7 @@ O total subiu de 380h para 384h: é o custo do retrabalho de fatiar vertical. Em
 3. 6.8 (log de mensagens)
 4. 5.3 (sem reagendar; só cancelar e criar novo)
 
-**Nunca corte:** 0.12, 0.14, 1.3, 2.6, 2.13, 4.2, 4.7 e 6.4. São as issues que separam um sistema funcional de um que vaza dados entre clientes, manda o mesmo lembrete três vezes ou avisa na hora errada.
+**Nunca corte:** 0.12, 0.14, 0.17, 1.3, 2.6, 2.13, 3.15, 4.2, 4.7 e 6.4. São as issues que separam um sistema funcional de um que vaza dados entre clientes, aceita comando forjado, manda o mesmo lembrete três vezes ou avisa na hora errada.
 
 ---
 

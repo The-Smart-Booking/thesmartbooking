@@ -10,7 +10,7 @@ Closes #
 
 ## Checklist
 
-- [ ] Branch no padrão `<tipo>/f<fase>-<descricao>` e commits no padrão `<tipo> - <descricao>`
+- [ ] Branch no padrão `<tipo>/t<fatia>-<descricao>` e commits no padrão `<tipo> - <descricao>`
 - [ ] CI verde
 - [ ] Critérios de aceite da issue verificados
 - [ ] Card movido no GitHub Projects
