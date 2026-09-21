@@ -24,7 +24,7 @@ saber em que card o time está antes de escrever qualquer linha.
 | | |
 |---|---|
 | Em andamento | — |
-| Em revisão | PR #32 (0.7 goose + 001) · PR #33 (0.8 tenants) · #54 (1.7 formato de erro) |
+| Em revisão | PR #32 (0.7 goose + 001) · PR #33 (0.8 tenants) · PR #61 (1.7 formato de erro) |
 | Próximos a puxar | 0.9 usuarios e memberships · 0.17 Postgres no CI · #55 (frontend) |
 | Fecha a Sprint 1 | 0.14 `RLS com FORCE, USING e WITH CHECK` + checklist da Fatia 0 no guia |
 | Atenção | PRs #32 e #33 citam `Closes #9`/`#10`, que não existem mais — religar aos cards novos antes do merge |
@@ -73,7 +73,7 @@ receber as telas da Fatia 1.
 
 **Fatia 1 — frontend base (não depende do banco)**
 
-- [ ] #54 — [T1] 1.7 Padronizar formato de resposta de erro da API · `review`
+- [ ] #54 — [T1] 1.7 Padronizar formato de resposta de erro da API · `review` · PR #61
 - [ ] #55 — [T1] 1.8 Setup Vite + React + TypeScript + roteamento · `backlog`
 - [ ] #56 — [T1] 1.9 Cliente HTTP com tratamento centralizado de erro · `backlog`
 
