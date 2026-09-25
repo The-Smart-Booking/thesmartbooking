@@ -7,6 +7,8 @@ Versão **1.3** · 24/09/2026
 ## Mudanças desde a v1.2
 
 - Por que sem ORM, registrado em §Acesso a dados.
+- UUID no Go é `google/uuid` (`overrides` no `sqlc.yaml`); `ComTenant` recebe `uuid.UUID`.
+- Script do `app_user` roda no compose e no CI.
 - goose e sqlc com versão fixa, igual nas três máquinas e no CI.
 - Duas conexões no `.env`: `GOOSE_DBSTRING` (dono das tabelas, migrations e seed)
   e `DATABASE_URL` (`app_user`, a API).
@@ -626,6 +628,12 @@ superusuário. Migrations rodam com outro usuário. Sem essa separação, o RLS 
 enfeite. No `.env`: a API conecta por `DATABASE_URL` (este usuário); goose e seed,
 por `GOOSE_DBSTRING` (o dono).
 
+O script da 0.15 precisa rodar em dois lugares: no `compose.yml`, via
+`docker-entrypoint-initdb.d` (só executa com volume vazio — quem já tem banco
+roda `docker compose down -v` uma vez), e no CI da 0.17, via `psql`, porque o
+`services:` do GitHub Actions não monta arquivo do repositório. Escreva-o como
+script que roda igual nos dois.
+
 O `ALTER DEFAULT PRIVILEGES` evita ter que lembrar de dar `GRANT` toda vez que uma
 tabela nova for criada.
 
@@ -717,7 +725,19 @@ sql:
         out: internal/storage/db
         sql_package: pgx/v5
         emit_pointers_for_null_types: true
+        overrides:
+          - db_type: uuid
+            go_type: github.com/google/uuid.UUID
+          - db_type: uuid
+            nullable: true
+            go_type:
+              import: github.com/google/uuid
+              type: UUID
+              pointer: true
 ```
+
+UUID no Go é `uuid.UUID` (`github.com/google/uuid`), não `pgtype.UUID`: é o que o
+config (1.1) já parseia e o que o #49 escreve. Decidido em 25/09/2026.
 
 Uma query por bloco, com nome e tipo de retorno:
 
@@ -742,14 +762,14 @@ pior, bug silencioso nas tabelas fora do RLS. Por isso o pacote gerado só é
 usado por dentro de `internal/storage`, sempre através de um helper:
 
 ```go
-func (s *Store) ComTenant(ctx context.Context, tenantID pgtype.UUID, fn func(q *db.Queries) error) error {
+func (s *Store) ComTenant(ctx context.Context, tenantID uuid.UUID, fn func(q *db.Queries) error) error {
     tx, err := s.pool.Begin(ctx)
     if err != nil {
         return err
     }
     defer tx.Rollback(ctx) // no-op depois do Commit
 
-    if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1::uuid::text, true)", tenantID); err != nil {
+    if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1, true)", tenantID.String()); err != nil {
         return err
     }
     if err := fn(db.New(tx)); err != nil {
@@ -779,10 +799,8 @@ Regras:
 - **Código gerado não se edita à mão.** Mudou a query ou a migration, roda
   `sqlc generate` e commita o resultado no mesmo PR. O CI roda `sqlc diff` e
   falha se estiverem fora de sincronia.
-- **Tipos:** com `pgx/v5`, `uuid` vira `pgtype.UUID` e `tstzrange` vira
-  `pgtype.Range[pgtype.Timestamptz]`. Se o time preferir `google/uuid`, é um
-  `overrides` no `sqlc.yaml` — decidam antes da primeira query, não depois da
-  décima.
+- **Tipos:** `uuid` vira `uuid.UUID` pelo `overrides` acima (nulo vira
+  `*uuid.UUID`); `tstzrange` vira `pgtype.Range[pgtype.Timestamptz]`.
 - **Erros do Postgres** chegam como `*pgconn.PgError` (ver `23P01` na 007);
   `pgx.ErrNoRows` é o "não encontrado" de `:one`.
 

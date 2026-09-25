@@ -29,7 +29,7 @@ Fatiando vertical, existe sistema funcionando na semana ~8 e ele cresce em capac
 ## Como usar
 
 - Cada item vira **uma issue**.
-- Campos do GitHub Projects: `Fatia` (0 a 7) e `Tamanho` (P ≈ 2h, M ≈ 5h, G ≈ 10h). Label `fatia-N`; a sprint mora na milestone.
+- No GitHub Projects: a fatia é a label `fatia-N`; o tamanho é o campo `Effort` (Low = P ≈ 2h, Medium = M ≈ 5h, High = G ≈ 10h); a sprint é o campo `Iteration` (2 semanas).
 - Título no formato `[T3] 3.6 Handler do /start: resolve token e grava chat_id` — prefixo da fatia + número do item.
 - Uma fatia pode ocupar mais de uma sprint; o status de cada card fica só no GitHub Projects (a lista dos cards criados está em `docs/cards.md`).
 - **Crie as issues de uma fatia por vez.** Backlog completo no dia 1 vira paisagem.

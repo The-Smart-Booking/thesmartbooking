@@ -9,7 +9,8 @@ Documento de requisitos e decisões técnicas — **v0.6** · 24/09/2026
 
 | # | O que mudou | Onde |
 |---|---|---|
-| 1 | Decisões em aberto vivem só em `docs/decisoes.md`, que ganhou quatro novas | 12.1 |
+| 1 | Decisões em aberto vivem só em `docs/decisoes.md` | 12.1 |
+| 2 | Decididos: UUID, prefixo `/api`, serviço na Fatia 1 e leitura da fila pelo worker | 12 |
 
 ## Mudanças desde a v0.4
 
@@ -435,6 +436,10 @@ usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (i
 | Sessão | Cookie `HttpOnly` + tabela `sessoes` |
 | Papéis | `text` + `CHECK`, não `ENUM` |
 | Acesso a dados | pgx v5 (`pgxpool`) + sqlc; sem ORM (motivo no guia de banco, §Acesso a dados) |
+| UUID no Go | `google/uuid` via `overrides` do sqlc |
+| Rotas da API | Tudo sob `/api`; proxy do Vite sem reescrita |
+| Serviço na Fatia 1 | `SERVICO_FIXO` no config até a 6.6 |
+| Worker × RLS | Laço por tenant com `ComTenant`, como `app_user` |
 
 ### 12.1 Ainda em aberto
 
