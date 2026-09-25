@@ -2,7 +2,7 @@
 
 ## Organizado por fatias verticais — v2.1 · 18/09/2026
 
-Complementa `docs/requisitos.md` (v0.5) e `docs/guia-banco-de-dados.md` (v1.2).
+Complementa `docs/requisitos.md` e `docs/guia-banco-de-dados.md`.
 
 > **Mudança desde a v1.0:** o backlog era fatiado horizontalmente (banco → auth → API → frontend → bot). Agora é fatiado **verticalmente**: cada fatia atravessa todas as camadas e termina em algo demonstrável. As issues são quase as mesmas; mudou o agrupamento, a ordem e o critério de conclusão de cada bloco.
 
@@ -31,7 +31,7 @@ Fatiando vertical, existe sistema funcionando na semana ~8 e ele cresce em capac
 - Cada item vira **uma issue**.
 - Campos do GitHub Projects: `Fatia` (0 a 7) e `Tamanho` (P ≈ 2h, M ≈ 5h, G ≈ 10h). Label `fatia-N`; a sprint mora na milestone.
 - Título no formato `[T3] 3.6 Handler do /start: resolve token e grava chat_id` — prefixo da fatia + número do item.
-- Uma fatia pode ocupar mais de uma sprint; o status de cada card está em `docs/kanban.md`.
+- Uma fatia pode ocupar mais de uma sprint; o status de cada card fica só no GitHub Projects (a lista dos cards criados está em `docs/cards.md`).
 - **Crie as issues de uma fatia por vez.** Backlog completo no dia 1 vira paisagem.
 
 ---
@@ -48,8 +48,8 @@ Fatiando vertical, existe sistema funcionando na semana ~8 e ele cresce em capac
 | 0.4  | `[T0] .env.example e carregamento de config na aplicação` | P | ✅ Sprint 0 (config passou para a 1.1) |
 | 0.5  | `[T0] GitHub Actions: go build, go vet, go test` | M | ✅ Sprint 0 |
 | 0.6  | `[T0] Padrão de commit e template de PR` | P | ✅ Sprint 0 |
-| 0.7  | `[T0] Configurar goose + migration 001 (extensões e app.current_tenant_id)` | P | PR #32 em revisão |
-| 0.8  | `[T0] Migration: tenants` | M | PR #33 em revisão |
+| 0.7  | `[T0] Configurar goose + migration 001 (extensões e app.current_tenant_id)` | P | |
+| 0.8  | `[T0] Migration: tenants` | M | |
 | 0.9  | `[T0] Migration: usuarios e memberships` | M | |
 | 0.10 | `[T0] Migration: clientes` | M | |
 | 0.11 | `[T0] Migration: servicos e disponibilidades` | M | |
@@ -64,6 +64,8 @@ Fatiando vertical, existe sistema funcionando na semana ~8 e ele cresce em capac
 **Critério de conclusão da fatia:** o checklist da Fatia 0 no `guia-banco-de-dados.md` passa inteiro — incluindo o item que quase todo time esquece, que é confirmar que agendamentos consecutivos (9-10h e 10-11h) **funcionam**.
 
 > **0.17 destrava o resto.** Sem Postgres no CI, o teste de isolamento da 0.14 e os testes de repositório da 1.2 e 1.3 só rodam na máquina de quem escreveu. Pode entrar assim que a 0.7 for mergeada.
+
+> **Ordem:** 0.7 → 0.8 → 0.9 → 0.10 → 0.11 → 0.12 → 0.13 → 0.15 → 0.16 → 0.14 → 0.18, com a 0.17 em paralelo assim que a 0.7 entrar. A 0.16 vem antes da 0.14 porque o teste de isolamento precisa dos dois tenants do seed; a 0.18 vem depois da 0.13 para cobrir `notificacoes` na cadeia de `ON DELETE`.
 
 > **0.14 é a issue mais importante do projeto.** Não atribua a quem está aprendendo Postgres agora.
 

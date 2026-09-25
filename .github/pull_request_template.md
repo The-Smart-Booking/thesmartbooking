@@ -14,5 +14,4 @@ Closes #
 - [ ] CI verde
 - [ ] Critérios de aceite da issue verificados
 - [ ] Card movido no GitHub Projects
-- [ ] `docs/kanban.md` atualizado neste PR
 - [ ] Se mexeu no banco: migration versionada (nada de `ALTER TABLE` à mão)

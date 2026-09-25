@@ -96,22 +96,26 @@ fix/t2-sessao-expirada
 - Merge por **squash**; a mensagem final segue o padrão de commit.
 - Apague a branch depois do merge.
 
-Quem revisa confere: critérios de aceite da issue, testes, e se o kanban foi atualizado.
+Quem revisa confere: critérios de aceite da issue, testes, e se o card foi movido no board.
 
 ---
 
-## Kanban — obrigatório
+## Board — obrigatório
 
-O board do GitHub Projects (**Smart Booking DevOps**) é a fonte da verdade do status.
-`docs/kanban.md` é o espelho em texto dele.
+O status de card mora **só** no board do GitHub Projects (**Smart Booking DevOps**).
+Nenhum arquivo do repositório repete status — espelho em texto envelhece e dá
+conflito em todo PR.
 
-| Momento | No board | No `docs/kanban.md` |
-|---|---|---|
-| Começou o card | mover para **In progress** | sufixo `wip` |
-| Abriu o PR | mover para **In review** | sufixo `review` (no próprio PR) |
-| Mergeou | mover para **Done** | `- [x]` e sufixo `feito` (no próprio PR) |
+| Momento | No board |
+|---|---|
+| Começou o card | mover para **In progress** |
+| Abriu o PR | mover para **In review** |
+| Mergeou | mover para **Done** |
 
-**PR que não atualiza o card não é aprovado.** Se o board e o arquivo discordarem, vale o board.
+**PR que não move o card não é aprovado.**
+
+`docs/cards.md` lista os cards que existem, sem status. Muda só quando cards são
+criados ou apagados (uma fatia por vez), num PR `docs`.
 
 ---
 
