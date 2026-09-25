@@ -1,4 +1,4 @@
-name: Go CI
+name: CI
 
 on:
   push:
@@ -13,13 +13,16 @@ jobs:
 
     steps:
       - name: Checkout do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar ambiente Go com Cache
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: "go.mod"
           cache: true
+
+      - name: Formatação (gofmt)
+        run: '[ -z "$(gofmt -l .)" ] || { gofmt -l .; exit 1; }'
 
       - name: Compilar (go build)
         run: go build ./...
@@ -29,3 +32,25 @@ jobs:
 
       - name: Executar testes (go test)
         run: go test ./...
+
+  web:
+    name: Web Lint & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v7
+
+      - name: Configurar Node com cache do npm
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
