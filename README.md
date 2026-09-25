@@ -29,13 +29,15 @@ Hoje:
 ```
 thesmartbooking/
 ├── .github/
-│   ├── workflows/ci.yml        # go build, go vet, go test em PR para a main
+│   ├── workflows/ci.yml        # Go (gofmt, vet, build, test) e web (lint, build) em PR para a main
 │   └── pull_request_template.md
 ├── cmd/api/                    # entrada da API
+├── internal/api/               # handlers e formato de erro (docs/erros-api.md)
 ├── web/                        # frontend React + Vite
 ├── docs/
 ├── compose.yml                 # PostgreSQL 16 + Adminer
 ├── .env.example
+├── CLAUDE.md                   # regras para o Claude Code
 └── CONTRIBUTING.md
 ```
 
@@ -44,7 +46,6 @@ Estrutura-alvo (cada pasta nasce no card que a usa):
 ```
 cmd/worker/            # consumidor da fila de notificações (T3)
 internal/config/       # leitura das variáveis de ambiente (T1)
-internal/api/          # handlers e middlewares (T1)
 internal/storage/      # repositórios — toda função recebe tenantID (T1)
 internal/storage/db/   # código gerado pelo sqlc — não editar à mão (T1)
 internal/notificador/  # interface Notificador + implementação Telegram (T3)
@@ -81,16 +82,20 @@ npm run dev
 
 ### ⏳ A partir da Fatia 0: migrations, seed e isolamento
 
+goose e sqlc nas versões fixadas em `docs/guia-banco-de-dados.md`.
+
 ```bash
-set -a; source .env; set +a   # exporta DATABASE_URL para o shell
-goose -dir db/migrations postgres "$DATABASE_URL" up
+goose up                      # lê GOOSE_DRIVER, GOOSE_DBSTRING e GOOSE_MIGRATION_DIR do .env
 sqlc generate                 # a partir da T1: regenera internal/storage/db
-psql "$DATABASE_URL" -f db/seed.sql
+set -a; source .env; set +a   # exporta as variáveis para o psql
+psql "$GOOSE_DBSTRING" -f db/seed.sql
 ```
+
+Duas conexões, de propósito: `GOOSE_DBSTRING` é o dono das tabelas (migrations e seed) e ignora o RLS; `DATABASE_URL` é o `app_user`, o único usuário que a API usa.
 
 O seed cria dois tenants fictícios (`alfa` e `beta`). São dois de propósito: com um só não é possível testar isolamento entre tenants.
 
-Conectado como `app_user` (nunca como o dono das tabelas):
+Conectado como `app_user` (`psql "$DATABASE_URL"`, nunca como o dono das tabelas):
 
 ```sql
 BEGIN;
@@ -118,7 +123,7 @@ ROLLBACK;
 
 🕐 **Fuso horário.** Tudo em UTC no banco (`timestamptz`). Conversão apenas na borda, usando `tenants.fuso_horario`.
 
-🌿 **Commits, branches e PR.** Commit `<tipo> - <descrição>`, branch `<tipo>/t<fatia>-<descrição>` a partir da `main`, um PR por card com `Closes #N`, aprovação de outro integrante e CI verde. Todo PR move o card no GitHub Projects e atualiza `docs/kanban.md`. Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
+🌿 **Commits, branches e PR.** Commit `<tipo> - <descrição>`, branch `<tipo>/t<fatia>-<descrição>` a partir da `main`, um PR por card com `Closes #N`, aprovação de outro integrante e CI verde. Todo PR move o card no GitHub Projects. Detalhes em [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
@@ -139,7 +144,7 @@ O backlog é dividido em fatias verticais: cada uma atravessa banco, API e front
 
 Legenda: ✅ concluída · 🚧 em andamento · ⏳ não iniciada
 
-Backlog detalhado em `docs/backlog.md`. Acompanhamento no GitHub Projects, espelhado em `docs/kanban.md`.
+Backlog detalhado em `docs/backlog.md`; cards já criados em `docs/cards.md`. Status de card, só no GitHub Projects.
 
 ---
 
@@ -149,10 +154,12 @@ Backlog detalhado em `docs/backlog.md`. Acompanhamento no GitHub Projects, espel
 |---|---|
 | `docs/requisitos.md` | Requisitos, arquitetura e decisões técnicas |
 | `docs/backlog.md` | Backlog por fatias verticais |
-| `docs/guia-banco-de-dados.md` | Migrations comentadas e armadilhas do RLS |
-| `docs/kanban.md` | Status de cada card, espelho do GitHub Projects |
+| `docs/guia-banco-de-dados.md` | Migrations comentadas, armadilhas do RLS e acesso a dados |
+| `docs/erros-api.md` | Formato de erro da API |
+| `docs/cards.md` | Cards do GitHub Projects por fatia (sem status) |
 | `docs/decisoes.md` | Decisões em aberto e seus prazos |
-| `CONTRIBUTING.md` | Padrão de commit, branch, PR e kanban |
+| `CONTRIBUTING.md` | Padrão de commit, branch, PR e board |
+| `CLAUDE.md` | Regras para o Claude Code |
 
 ---
 

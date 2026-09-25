@@ -1,9 +1,16 @@
 # Requisitos — Smart Booking
 
 Sistema de agendamentos multi-tenant com notificação via Telegram.
-Documento de requisitos e decisões técnicas — **v0.5** · 18/09/2026
+Documento de requisitos e decisões técnicas — **v0.6** · 24/09/2026
 
 > Fonte da verdade: este arquivo. A pasta do Drive é histórico.
+
+## Mudanças desde a v0.5
+
+| # | O que mudou | Onde |
+|---|---|---|
+| 1 | Decisões em aberto vivem só em `docs/decisoes.md` | 12.1 |
+| 2 | Decididos: UUID, prefixo `/api`, serviço na Fatia 1 e leitura da fila pelo worker | 12 |
 
 ## Mudanças desde a v0.4
 
@@ -428,19 +435,16 @@ usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (i
 | Bot | Único no MVP, coluna por tenant já prevista |
 | Sessão | Cookie `HttpOnly` + tabela `sessoes` |
 | Papéis | `text` + `CHECK`, não `ENUM` |
-| Acesso a dados | pgx v5 (`pgxpool`) + sqlc; sem ORM |
+| Acesso a dados | pgx v5 (`pgxpool`) + sqlc; sem ORM (motivo no guia de banco, §Acesso a dados) |
+| UUID no Go | `google/uuid` via `overrides` do sqlc |
+| Rotas da API | Tudo sob `/api`; proxy do Vite sem reescrita |
+| Serviço na Fatia 1 | `SERVICO_FIXO` no config até a 6.6 |
+| Worker × RLS | Laço por tenant com `ComTenant`, como `app_user` |
 
 ### 12.1 Ainda em aberto
 
-| Tema | Prazo limite para decidir |
-|---|---|
-| Nomes e granularidade dos papéis | Antes do middleware de autorização (2.7) |
-| Antecedência padrão do lembrete | Antes de tornar configurável por tenant (4.6) |
-| Agendamento por link público (cliente sem conta) | Antes da Fatia 2 |
-| Quem entrega o deep link ao cliente | Antes da tela de cliente (3.8) |
-| Hospedagem | Antes da Fatia 7 |
-
-Registro e prazos em `docs/decisoes.md`.
+Lista única, com prazo e responsável, em `docs/decisoes.md`. Não se repete aqui
+para as duas não divergirem.
 
 ## 13. Estimativa de prazo
 

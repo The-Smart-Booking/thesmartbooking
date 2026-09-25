@@ -1,8 +1,17 @@
 # Guia de Banco de Dados — Smart Booking
 
 Fatia 0 do backlog (itens 0.7 a 0.18) e base de acesso a dados da Fatia 1 (1.2 e
-1.3). Complementa `docs/requisitos.md` (v0.5).
-Versão **1.2** · 18/09/2026
+1.3). Complementa `docs/requisitos.md`.
+Versão **1.3** · 24/09/2026
+
+## Mudanças desde a v1.2
+
+- Por que sem ORM, registrado em §Acesso a dados.
+- UUID no Go é `google/uuid` (`overrides` no `sqlc.yaml`); `ComTenant` recebe `uuid.UUID`.
+- Script do `app_user` roda no compose e no CI.
+- goose e sqlc com versão fixa, igual nas três máquinas e no CI.
+- Duas conexões no `.env`: `GOOSE_DBSTRING` (dono das tabelas, migrations e seed)
+  e `DATABASE_URL` (`app_user`, a API).
 
 ## Mudanças desde a v1.1
 
@@ -43,7 +52,7 @@ escolha: **nenhuma alteração de schema fora de migration versionada, nunca**. 
 máquina funciona".
 
 ```bash
-go install github.com/pressly/goose/v3/cmd/goose@latest
+go install github.com/pressly/goose/v3/cmd/goose@v3.28.0   # mesma versão para todos
 mkdir -p db/migrations
 goose -dir db/migrations create criar_extensoes sql
 ```
@@ -616,7 +625,14 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 
 `app_user` **não** é dono de nenhuma tabela, **não** tem `BYPASSRLS` e **não** é
 superusuário. Migrations rodam com outro usuário. Sem essa separação, o RLS é
-enfeite.
+enfeite. No `.env`: a API conecta por `DATABASE_URL` (este usuário); goose e seed,
+por `GOOSE_DBSTRING` (o dono).
+
+O script da 0.15 precisa rodar em dois lugares: no `compose.yml`, via
+`docker-entrypoint-initdb.d` (só executa com volume vazio — quem já tem banco
+roda `docker compose down -v` uma vez), e no CI da 0.17, via `psql`, porque o
+`services:` do GitHub Actions não monta arquivo do repositório. Escreva-o como
+script que roda igual nos dois.
 
 O `ALTER DEFAULT PRIVILEGES` evita ter que lembrar de dar `GRANT` toda vez que uma
 tabela nova for criada.
@@ -674,9 +690,24 @@ funções Go tipadas em `internal/storage/db`. Erro de SQL aparece no
 `sqlc generate`, não em produção.
 
 ```bash
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1   # mesma versão para todos
 go get github.com/jackc/pgx/v5
 ```
+
+**Versão fixa, igual no CI e nas três máquinas.** O código gerado traz a versão do
+sqlc no cabeçalho: com versões diferentes, o `sqlc diff` acusa diferença em todo
+PR. O `go install` do sqlc usa cgo (precisa de `gcc`); no Windows, use o binário
+da release ou `docker run --rm -v "$PWD":/src -w /src sqlc/sqlc:1.31.1 generate`.
+
+**Por que sem ORM.** O que protege os dados deste projeto mora no Postgres: RLS
+com `FORCE`, `set_config` por transação, constraint de exclusão, FKs compostas e
+`FOR UPDATE SKIP LOCKED` na fila. Um ORM (GORM, ent, Bun) não ajuda em nenhum
+desses pontos, e parte dele atrapalha: `AutoMigrate` ou schema em Go competem com
+o goose, e o `Updates(struct)` do GORM ignora valor zero — gravar
+`notificavel = false` (4.5) vira no-op silencioso. Com SQL explícito em
+`db/queries/`, conferir o `WHERE tenant_id = $1` na revisão é um grep, e o sqlc
+valida cada query contra as migrations antes do CI. O que se quer de um ORM —
+struct tipada e nada de `Scan` à mão — o sqlc já gera.
 
 `sqlc.yaml` na raiz. O schema **são as próprias migrations** — o sqlc entende as
 anotações do goose e ignora os blocos `Down`. Nada de `schema.sql` paralelo, que
@@ -694,7 +725,19 @@ sql:
         out: internal/storage/db
         sql_package: pgx/v5
         emit_pointers_for_null_types: true
+        overrides:
+          - db_type: uuid
+            go_type: github.com/google/uuid.UUID
+          - db_type: uuid
+            nullable: true
+            go_type:
+              import: github.com/google/uuid
+              type: UUID
+              pointer: true
 ```
+
+UUID no Go é `uuid.UUID` (`github.com/google/uuid`), não `pgtype.UUID`: é o que o
+config (1.1) já parseia e o que o #49 escreve. Decidido em 25/09/2026.
 
 Uma query por bloco, com nome e tipo de retorno:
 
@@ -719,14 +762,14 @@ pior, bug silencioso nas tabelas fora do RLS. Por isso o pacote gerado só é
 usado por dentro de `internal/storage`, sempre através de um helper:
 
 ```go
-func (s *Store) ComTenant(ctx context.Context, tenantID pgtype.UUID, fn func(q *db.Queries) error) error {
+func (s *Store) ComTenant(ctx context.Context, tenantID uuid.UUID, fn func(q *db.Queries) error) error {
     tx, err := s.pool.Begin(ctx)
     if err != nil {
         return err
     }
     defer tx.Rollback(ctx) // no-op depois do Commit
 
-    if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1::uuid::text, true)", tenantID); err != nil {
+    if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1, true)", tenantID.String()); err != nil {
         return err
     }
     if err := fn(db.New(tx)); err != nil {
@@ -756,10 +799,8 @@ Regras:
 - **Código gerado não se edita à mão.** Mudou a query ou a migration, roda
   `sqlc generate` e commita o resultado no mesmo PR. O CI roda `sqlc diff` e
   falha se estiverem fora de sincronia.
-- **Tipos:** com `pgx/v5`, `uuid` vira `pgtype.UUID` e `tstzrange` vira
-  `pgtype.Range[pgtype.Timestamptz]`. Se o time preferir `google/uuid`, é um
-  `overrides` no `sqlc.yaml` — decidam antes da primeira query, não depois da
-  décima.
+- **Tipos:** `uuid` vira `uuid.UUID` pelo `overrides` acima (nulo vira
+  `*uuid.UUID`); `tstzrange` vira `pgtype.Range[pgtype.Timestamptz]`.
 - **Erros do Postgres** chegam como `*pgconn.PgError` (ver `23P01` na 007);
   `pgx.ErrNoRows` é o "não encontrado" de `:one`.
 
