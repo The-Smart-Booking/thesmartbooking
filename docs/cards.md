@@ -25,6 +25,10 @@ Conferido em 25/09/2026.
 | #73 | 0.17 | Subir Postgres no CI para os testes de banco | M | infra | 0.7 |
 | #74 | 0.18 | Teste: exclusão de tenant não quebra em chave estrangeira | P | banco | 0.13, 0.17 |
 
+**Prioridade:** 0.7 -> 0.8 -> 0.9 -> 0.10 -> 0.11 -> 0.12 -> 0.13 -> 0.15 -> 0.16 -> 0.14 -> 0.18
+
+0.17 (em paralelo, depois de 0.7). A 0.16 vem antes da 0.14 porque o teste de isolamento precisa dos dois tenants do seed.
+
 Itens 0.1 a 0.6 foram feitos na Sprint 0, com a numeração antiga (issues apagadas).
 
 ## Fatia 1 — Agendar
@@ -43,3 +47,7 @@ Itens 0.1 a 0.6 foram feitos na Sprint 0, com a numeração antiga (issues apaga
 | #57 | 1.10 | Tela de listagem de agendamentos | M | frontend | 1.6, 1.9 |
 | #58 | 1.11 | Formulário de novo agendamento (data e hora digitadas, sem slots) | M | frontend | 1.4, 1.5, 1.9 |
 | #59 | 1.12 | Estados de carregamento e exibição de erro | M | frontend | 1.9, 1.10, 1.11 |
+
+**Prioridade:** 1.1 -> 1.2 -> 1.3 -> 1.4 -> 1.6 -> 1.5 -> 1.10 -> 1.11 -> 1.12
+
+1.7 -> 1.8 -> 1.9 (em paralelo, junto com o fim da Fatia 0). A 1.6 vem antes da 1.5 porque destrava a 1.10.
