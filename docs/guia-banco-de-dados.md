@@ -54,7 +54,7 @@ máquina funciona".
 ```bash
 go install github.com/pressly/goose/v3/cmd/goose@v3.28.0   # mesma versão para todos
 mkdir -p db/migrations
-goose -dir db/migrations create criar_extensoes sql
+goose -dir db/migrations -s create criar_extensoes sql   # -s: 00001_, 00002_... na ordem abaixo
 ```
 
 **Regra para toda migration:** escreva o `Down` junto com o `Up`, e teste os dois.
