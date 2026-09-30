@@ -33,6 +33,7 @@ thesmartbooking/
 │   └── pull_request_template.md
 ├── cmd/api/                    # entrada da API
 ├── internal/api/               # handlers e formato de erro (docs/erros-api.md)
+├── db/migrations/              # goose, SQL puro
 ├── web/                        # frontend React + Vite
 ├── docs/
 ├── compose.yml                 # PostgreSQL 16 + Adminer
@@ -49,7 +50,6 @@ internal/config/       # leitura das variáveis de ambiente (T1)
 internal/storage/      # repositórios — toda função recebe tenantID (T1)
 internal/storage/db/   # código gerado pelo sqlc — não editar à mão (T1)
 internal/notificador/  # interface Notificador + implementação Telegram (T3)
-db/migrations/         # goose, SQL puro (T0)
 db/queries/            # queries SQL anotadas para o sqlc (T1)
 sqlc.yaml              # configuração do sqlc (T1)
 db/seed.sql            # dois tenants fictícios (T0)
@@ -80,12 +80,29 @@ npm install
 npm run dev
 ```
 
-### ⏳ A partir da Fatia 0: migrations, seed e isolamento
+### 🗄️ Migrations
 
-goose e sqlc nas versões fixadas em `docs/guia-banco-de-dados.md`.
+goose **v3.28.0**, a mesma versão para todos. Ele lê `GOOSE_DRIVER`, `GOOSE_DBSTRING`
+e `GOOSE_MIGRATION_DIR` do `.env` sozinho (copie as três do `.env.example`), então
+os comandos abaixo rodam contra o Postgres do `compose.yml`, com ele de pé:
 
 ```bash
-goose up                      # lê GOOSE_DRIVER, GOOSE_DBSTRING e GOOSE_MIGRATION_DIR do .env
+go install github.com/pressly/goose/v3/cmd/goose@v3.28.0   # instala em ~/go/bin, que precisa estar no PATH
+
+goose status                  # o que já rodou e o que falta
+goose up                      # aplica todas as pendentes
+goose down                    # desfaz só a última
+goose down-to 0               # desfaz todas
+goose -s create nome sql      # nova migration: 00002_nome.sql (-s = numeração sequencial)
+```
+
+Toda migration tem `Up` e `Down`, e os dois são testados: `goose up`, `goose down-to 0`, `goose up`.
+
+### ⏳ A partir da Fatia 0: seed e isolamento
+
+sqlc na versão fixada em `docs/guia-banco-de-dados.md`.
+
+```bash
 sqlc generate                 # a partir da T1: regenera internal/storage/db
 set -a; source .env; set +a   # exporta as variáveis para o psql
 psql "$GOOSE_DBSTRING" -f db/seed.sql
