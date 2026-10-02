@@ -5,7 +5,7 @@
    backlog sem card não se começa. Lista dos cards em `docs/cards.md`; status,
    só no board.
 2. **O corpo da issue é o contrato**: critérios de aceite e dependências estão lá.
-   Se o card depende de decisão aberta em `docs/decisoes.md`, pare e pergunte.
+   Se o card depende de decisão em aberto, pare e pergunte.
 3. **Banco:** leia `docs/guia-banco-de-dados.md` antes de migration ou acesso a
    dados. Sem ORM: SQL em `db/queries/`, Go gerado pelo sqlc. Tenant só por
    `set_config('app.tenant_id', $1, true)` dentro de transação, nunca `SET`.

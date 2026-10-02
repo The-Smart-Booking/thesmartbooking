@@ -29,7 +29,7 @@ Conferido em 25/09/2026.
 
 0.17 (em paralelo, depois de 0.7). A 0.16 vem antes da 0.14 porque o teste de isolamento precisa dos dois tenants do seed.
 
-Itens 0.1 a 0.6 foram feitos na Sprint 0, com a numeração antiga (issues apagadas).
+Itens 0.1 a 0.6 não têm card: as issues da numeração antiga foram apagadas.
 
 ## Fatia 1 — Agendar
 

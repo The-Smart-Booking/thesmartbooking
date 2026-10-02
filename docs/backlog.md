@@ -6,7 +6,7 @@ Complementa `docs/requisitos.md` e `docs/guia-banco-de-dados.md`.
 
 > **Mudança desde a v1.0:** o backlog era fatiado horizontalmente (banco → auth → API → frontend → bot). Agora é fatiado **verticalmente**: cada fatia atravessa todas as camadas e termina em algo demonstrável. As issues são quase as mesmas; mudou o agrupamento, a ordem e o critério de conclusão de cada bloco.
 
-> **Mudanças da v2.1:** voltaram cinco itens das revisões de arquitetura de 16 e 17/09 que a v2.0 não trazia — Postgres no CI (0.17), teste de exclusão de tenant (0.18), migration `sessoes` (2.14), normalização de e-mail (2.15) e `secret_token` no webhook (3.15). A Fatia 0 ganhou coluna de status. A decisão de sessão (cookie `HttpOnly`) já estava tomada e deixou de aparecer como pendente. Cronograma recalculado.
+> **Mudanças da v2.1:** voltaram cinco itens das revisões de arquitetura de 16 e 17/09 que a v2.0 não trazia — Postgres no CI (0.17), teste de exclusão de tenant (0.18), migration `sessoes` (2.14), normalização de e-mail (2.15) e `secret_token` no webhook (3.15). A decisão de sessão (cookie `HttpOnly`) já estava tomada e deixou de aparecer como pendente. Cronograma recalculado.
 
 ---
 
@@ -40,26 +40,28 @@ Fatiando vertical, existe sistema funcionando na semana ~8 e ele cresce em capac
 
 Único bloco horizontal do projeto. Ao final, o banco está correto e o CI funciona; não há nada para mostrar a um usuário, e tudo bem.
 
-| #    | Issue | Tam. | Status |
-|------|-------|------|--------|
-| 0.1  | `[T0] Criar repositório, README e estrutura de pastas` | P | ✅ Sprint 0 |
-| 0.2  | `[T0] Branch protection na main (1 aprovação obrigatória)` | P | ✅ Sprint 0 |
-| 0.3  | `[T0] docker-compose com postgres:16-alpine` | P | ✅ Sprint 0 |
-| 0.4  | `[T0] .env.example e carregamento de config na aplicação` | P | ✅ Sprint 0 (config passou para a 1.1) |
-| 0.5  | `[T0] GitHub Actions: go build, go vet, go test` | M | ✅ Sprint 0 |
-| 0.6  | `[T0] Padrão de commit e template de PR` | P | ✅ Sprint 0 |
-| 0.7  | `[T0] Configurar goose + migration 001 (extensões e app.current_tenant_id)` | P | |
-| 0.8  | `[T0] Migration: tenants` | M | |
-| 0.9  | `[T0] Migration: usuarios e memberships` | M | |
-| 0.10 | `[T0] Migration: clientes` | M | |
-| 0.11 | `[T0] Migration: servicos e disponibilidades` | M | |
-| 0.12 | `[T0] Migration: agendamentos + constraint de sobreposição + trigger` | M | |
-| 0.13 | `[T0] Migration: notificacoes (outbox) com UNIQUE(agendamento_id, tipo, versao)` | M | |
-| 0.14 | `[T0] Migration: RLS com FORCE, USING e WITH CHECK em todas as tabelas` | G | |
-| 0.15 | `[T0] Script de init: app_user sem BYPASSRLS e grants` | P | |
-| 0.16 | `[T0] Seed com dois tenants fictícios e UUIDs fixos` | P | |
-| 0.17 | `[T0] Subir Postgres no CI para os testes de banco` | M | |
-| 0.18 | `[T0] Teste: exclusão de tenant não quebra em chave estrangeira` | P | |
+| #    | Issue | Tam. |
+|------|-------|------|
+| 0.1  | `[T0] Criar repositório, README e estrutura de pastas` | P |
+| 0.2  | `[T0] Branch protection na main (1 aprovação obrigatória)` | P |
+| 0.3  | `[T0] docker-compose com postgres:16-alpine` | P |
+| 0.4  | `[T0] .env.example e carregamento de config na aplicação` | P |
+| 0.5  | `[T0] GitHub Actions: go build, go vet, go test` | M |
+| 0.6  | `[T0] Padrão de commit e template de PR` | P |
+| 0.7  | `[T0] Configurar goose + migration 001 (extensões e app.current_tenant_id)` | P |
+| 0.8  | `[T0] Migration: tenants` | M |
+| 0.9  | `[T0] Migration: usuarios e memberships` | M |
+| 0.10 | `[T0] Migration: clientes` | M |
+| 0.11 | `[T0] Migration: servicos e disponibilidades` | M |
+| 0.12 | `[T0] Migration: agendamentos + constraint de sobreposição + trigger` | M |
+| 0.13 | `[T0] Migration: notificacoes (outbox) com UNIQUE(agendamento_id, tipo, versao)` | M |
+| 0.14 | `[T0] Migration: RLS com FORCE, USING e WITH CHECK em todas as tabelas` | G |
+| 0.15 | `[T0] Script de init: app_user sem BYPASSRLS e grants` | P |
+| 0.16 | `[T0] Seed com dois tenants fictícios e UUIDs fixos` | P |
+| 0.17 | `[T0] Subir Postgres no CI para os testes de banco` | M |
+| 0.18 | `[T0] Teste: exclusão de tenant não quebra em chave estrangeira` | P |
+
+O carregamento de config da 0.4 passou para a 1.1.
 
 **Critério de conclusão da fatia:** o checklist da Fatia 0 no `guia-banco-de-dados.md` passa inteiro — incluindo o item que quase todo time esquece, que é confirmar que agendamentos consecutivos (9-10h e 10-11h) **funcionam**.
 
@@ -124,7 +126,7 @@ Fatiando vertical, existe sistema funcionando na semana ~8 e ele cresce em capac
 
 **Sessão já decidida:** cookie `HttpOnly` + `Secure` + `SameSite=Lax` com a tabela `sessoes` (`requisitos.md` §9). Por isso a 2.14 vem antes da 2.3.
 
-**Decisão com prazo nesta fatia:** nomes e granularidade dos papéis, antes da 2.7 (`docs/decisoes.md`).
+**Decisão com prazo nesta fatia:** nomes e granularidade dos papéis, antes da 2.7.
 
 **Critério de conclusão:** 2.13 passa no CI. Sem esse teste verde, o isolamento é suposição, não garantia — e as fatias seguintes vão construir por cima dele.
 

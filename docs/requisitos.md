@@ -1,9 +1,15 @@
 # Requisitos — Smart Booking
 
 Sistema de agendamentos multi-tenant com notificação via Telegram.
-Documento de requisitos e decisões técnicas — **v0.6** · 24/09/2026
+Documento de requisitos e decisões técnicas — **v0.7** · 02/10/2026
 
 > Fonte da verdade: este arquivo. A pasta do Drive é histórico.
+
+## Mudanças desde a v0.6
+
+| # | O que mudou | Onde |
+|---|---|---|
+| 1 | Lista de decisões em aberto (§12.1, `docs/decisoes.md`) descontinuada | 12 |
 
 ## Mudanças desde a v0.5
 
@@ -440,11 +446,6 @@ usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (i
 | Rotas da API | Tudo sob `/api`; proxy do Vite sem reescrita |
 | Serviço na Fatia 1 | `SERVICO_FIXO` no config até a 6.6 |
 | Worker × RLS | Laço por tenant com `ComTenant`, como `app_user` |
-
-### 12.1 Ainda em aberto
-
-Lista única, com prazo e responsável, em `docs/decisoes.md`. Não se repete aqui
-para as duas não divergirem.
 
 ## 13. Estimativa de prazo
 

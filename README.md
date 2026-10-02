@@ -4,7 +4,7 @@ Plataforma multi-tenant de agendamentos com notificações automáticas via Tele
 
 Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários, serviços, horários e clientes, isolados das demais. O cliente final recebe confirmação e lembrete pelo Telegram, sem precisar de conta no sistema.
 
-> 🚧 **Status:** Sprint 0 concluída (ambiente Docker, CI e padrões do time). Em andamento: Sprint 1 — fim da Fatia 0 (schema, RLS e seed) e base do frontend.
+> 🚧 Em desenvolvimento. Andamento no GitHub Projects (Smart Booking DevOps).
 
 ---
 
@@ -98,7 +98,7 @@ goose -s create nome sql      # nova migration: 00002_nome.sql (-s = numeração
 
 Toda migration tem `Up` e `Down`, e os dois são testados: `goose up`, `goose down-to 0`, `goose up`.
 
-### ⏳ A partir da Fatia 0: seed e isolamento
+### Seed e isolamento (a partir da Fatia 0)
 
 sqlc na versão fixada em `docs/guia-banco-de-dados.md`.
 
@@ -148,18 +148,16 @@ ROLLBACK;
 
 O backlog é dividido em fatias verticais: cada uma atravessa banco, API e frontend e termina em algo demonstrável. Uma fatia pode levar mais de uma sprint.
 
-| Fatia | Entrega | Status |
-|---|---|---|
-| T0 — Fundação | Repositório, Docker, CI, migrations, RLS, seed com dois tenants | 🚧 |
-| T1 — Agendar | Criar e listar agendamentos no navegador (tenant fixo, sem login) | ⏳ |
-| T2 — Entrar | Signup, login, sessão e isolamento real entre tenants | ⏳ |
-| T3 — Avisar | Vincular cliente ao Telegram e enviar confirmação | ⏳ |
-| T4 — Lembrar | Lembrete automático X horas antes | ⏳ |
-| T5 — Cancelar | Cancelar e reagendar, inclusive pelo bot | ⏳ |
-| T6 — Configurar | Serviços, disponibilidades e slots livres | ⏳ |
-| T7 — Entregar | Deploy e documentação final | ⏳ |
-
-Legenda: ✅ concluída · 🚧 em andamento · ⏳ não iniciada
+| Fatia | Entrega |
+|---|---|
+| T0 — Fundação | Repositório, Docker, CI, migrations, RLS, seed com dois tenants |
+| T1 — Agendar | Criar e listar agendamentos no navegador (tenant fixo, sem login) |
+| T2 — Entrar | Signup, login, sessão e isolamento real entre tenants |
+| T3 — Avisar | Vincular cliente ao Telegram e enviar confirmação |
+| T4 — Lembrar | Lembrete automático X horas antes |
+| T5 — Cancelar | Cancelar e reagendar, inclusive pelo bot |
+| T6 — Configurar | Serviços, disponibilidades, slots livres e fuso por tenant |
+| T7 — Entregar | Deploy e documentação final |
 
 Backlog detalhado em `docs/backlog.md`; cards já criados em `docs/cards.md`. Status de card, só no GitHub Projects.
 
@@ -169,14 +167,13 @@ Backlog detalhado em `docs/backlog.md`; cards já criados em `docs/cards.md`. St
 
 | Arquivo | Conteúdo |
 |---|---|
-| `docs/requisitos.md` | Requisitos, arquitetura e decisões técnicas |
-| `docs/backlog.md` | Backlog por fatias verticais |
-| `docs/guia-banco-de-dados.md` | Migrations comentadas, armadilhas do RLS e acesso a dados |
-| `docs/erros-api.md` | Formato de erro da API |
-| `docs/cards.md` | Cards do GitHub Projects por fatia (sem status) |
-| `docs/decisoes.md` | Decisões em aberto e seus prazos |
-| `CONTRIBUTING.md` | Padrão de commit, branch, PR e board |
-| `CLAUDE.md` | Regras para o Claude Code |
+| [`docs/requisitos.md`](docs/requisitos.md) | Requisitos, arquitetura e decisões técnicas tomadas (§12) |
+| [`docs/backlog.md`](docs/backlog.md) | Backlog por fatias verticais |
+| [`docs/guia-banco-de-dados.md`](docs/guia-banco-de-dados.md) | Migrations comentadas, armadilhas do RLS e acesso a dados |
+| [`docs/erros-api.md`](docs/erros-api.md) | Formato de erro da API |
+| [`docs/cards.md`](docs/cards.md) | Cards do GitHub Projects por fatia (sem status) |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Padrão de commit, branch, PR e board |
+| [`CLAUDE.md`](CLAUDE.md) | Regras para o Claude Code |
 
 ---
 
@@ -190,14 +187,8 @@ O `seed.sql` usa exclusivamente dados fictícios. Não versione nem carregue dad
 
 ## 👥 Equipe
 
-Projeto acadêmico — FAESA
+Projeto para estudo
 
 - Igor Salgado
 - Davi Oliveira
 - João Victor Cunha
-
----
-
-## 📄 Licença
-
-A definir.
