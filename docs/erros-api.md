@@ -7,7 +7,7 @@ Toda resposta de erro (status 4xx/5xx) tem `Content-Type: application/json` e es
   "erro": {
     "codigo": "conflito_horario",
     "mensagem": "Já existe um agendamento nesse horário.",
-    "detalhes": { "profissional_id": 7 }
+    "detalhes": { "prestador_id": "5f0c2a9e-3b7d-4c1e-9a8f-2d6b1e7c4a90" }
   }
 }
 ```
@@ -28,6 +28,26 @@ Toda resposta de erro (status 4xx/5xx) tem `Content-Type: application/json` e es
 | 500    | `erro_interno`        | Falha inesperada. Mensagem sempre genérica; o detalhe fica só no log do servidor. |
 
 Código novo entra aqui e em `internal/api/erros.go` no mesmo PR.
+
+## Códigos previstos
+
+Decididos em 02/10/2026; ainda não existem em `internal/api/erros.go`. Cada um
+sobe para a tabela de cima, junto com a constante no `erros.go`, no PR do card
+que o introduz.
+
+| Status | `codigo`           | Quando | Entra em |
+|--------|--------------------|--------|----------|
+| 401    | `nao_autenticado`  | Sem sessão válida: cookie ausente, expirado ou revogado. | 2.5 |
+| 403    | `sem_permissao`    | Agendamento de outro prestador do mesmo tenant; `prestador_id` de outro pedido por um prestador; rota só de owner; remover o criador da empresa; owner que não é o criador removendo owner. | 2.7 (remoções: 5.8) |
+| 409    | `status_invalido`  | Transição de status inválida: concluir antes do início; cancelar, remarcar ou trocar o serviço de agendamento cancelado ou concluído. | 5.1 |
+| 409    | `convite_invalido` | Convite expirado ou já aceito, ou para e-mail que já tem membership ativo no tenant. | 2.18, 2.19 |
+
+`conflito_horario` passa a valer também no `PATCH` que remarca ou troca o serviço
+(5.1), que dispara a constraint de sobreposição de novo.
+
+Agendamento de **outro tenant** continua `404 nao_encontrado` (o RLS nem deixa
+ver); de outro prestador do **mesmo** tenant, para quem não é owner,
+`403 sem_permissao`. Token de convite inexistente também é 404.
 
 ## Cliente HTTP (1.9)
 

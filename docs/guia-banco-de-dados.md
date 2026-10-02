@@ -2,7 +2,24 @@
 
 Fatia 0 do backlog (itens 0.7 a 0.18) e base de acesso a dados da Fatia 1 (1.2 e
 1.3). Complementa `docs/requisitos.md`.
-Versão **1.3** · 24/09/2026
+Versão **1.4** · 02/10/2026
+
+## Mudanças desde a v1.3
+
+Decisões de 02/10/2026 (`requisitos.md` v0.8). Nenhuma migration nova é escrita
+agora: o guia descreve o que as 003, 005, 007, 009 e 011 vão conter.
+
+- `CHECK` de papel só com `owner` e `prestador`, em `memberships` e `convites`.
+- `tenants.criado_por` entra por `ALTER TABLE` na 003: a 002 já foi mergeada.
+- Dinheiro em centavos (§Dinheiro): `servicos.preco_centavos` sem `DEFAULT` e
+  `agendamentos.valor_centavos`, os dois com `CHECK >= 0`.
+- Índice `idx_agendamentos_prestador_inicio` para o escopo por prestador.
+- `REVOKE DELETE ON agendamentos FROM app_user` na 009: agendamento nunca é apagado.
+- `sessoes` e `convites` também ficam fora do RLS: são cinco tabelas com `WHERE` manual.
+- Membership removido: o que exige ativo e o que mostra removidos; reconvite reativa.
+- Seed na ordem `usuarios` → `tenants` → `memberships`.
+- Escopo por prestador e operações por id em §Acesso a dados.
+- Checklist da Fatia 0 com papel inválido, valor negativo e `DELETE` em `agendamentos`.
 
 ## Mudanças desde a v1.2
 
@@ -68,16 +85,32 @@ A ordem não é estética — é imposta pelas dependências de chave estrangeir
 ```
 001 extensões + função de contexto
 002 tenants
-003 usuarios + memberships
+003 usuarios + memberships + tenants.criado_por (ALTER)
 004 clientes
 005 servicos
 006 disponibilidades
 007 agendamentos        ← depende de 003, 004, 005
 008 notificacoes        ← depende de 007
-009 RLS policies        ← depende de todas
+009 RLS + REVOKE DELETE ← depende de todas
 010 sessoes             ← depende de 003 (independe do resto)
 011 convites            ← depende de 002 e 003
 ```
+
+## Dinheiro: centavos em `integer`
+
+Convenção para toda coluna de valor (hoje `servicos.preco_centavos` e
+`agendamentos.valor_centavos`):
+
+- `integer` em **centavos**, com sufixo `_centavos` no nome: R$ 45,90 é `4590`.
+- `CHECK (... >= 0)` e sem `DEFAULT`: valor esquecido falha no `INSERT`, não vira zero.
+- Nunca `money` (depende de `lc_monetary` e arredonda na conversão) nem `float`
+  (`0,1 + 0,2` não dá `0,3`).
+- Nem `numeric`: o sqlc gera `pgtype.Numeric`, incômodo no Go. Com `integer`, a
+  coluna vira `int32`; somas saem com `COALESCE(sum(...), 0)::bigint`, `int64` no Go.
+- Formatar em reais só na borda (frontend), como o fuso horário.
+
+`integer` vai até 2³¹ − 1 centavos (~R$ 21 milhões) por linha: sobra para um
+agendamento.
 
 ---
 
@@ -139,6 +172,9 @@ adote.
 `slug` é o identificador legível usado na URL e no header de tenant. O `CHECK`
 impede maiúscula, espaço ou caractere que quebre URL.
 
+**`criado_por` não está aqui.** A 002 já foi mergeada, e `usuarios` só nasce na
+003: a coluna entra por `ALTER TABLE` lá (ver 003).
+
 ⚠️ **`telegram_bot_token` só pode ser preenchido depois que a 009 resolver o
 acesso a esta tabela.** `tenants` fica fora do RLS (o login precisa dela antes de
 existir contexto de tenant), então hoje qualquer sessão autenticada leria o token
@@ -159,6 +195,10 @@ CREATE TABLE usuarios (
 
 CREATE UNIQUE INDEX usuarios_email_unico ON usuarios (lower(email));
 
+-- criador da empresa: a 002 já foi mergeada, então a coluna entra aqui
+ALTER TABLE tenants
+  ADD COLUMN criado_por uuid NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT;
+
 CREATE TABLE memberships (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   usuario_id  uuid NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -166,7 +206,7 @@ CREATE TABLE memberships (
   papel       text NOT NULL,
   removido_em timestamptz,
   criado_em   timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT papel_valido CHECK (papel IN ('owner', 'prestador', 'atendente')),
+  CONSTRAINT papel_valido CHECK (papel IN ('owner', 'prestador')),
   CONSTRAINT membership_unico UNIQUE (usuario_id, tenant_id)
 );
 
@@ -175,12 +215,32 @@ CREATE INDEX idx_memberships_tenant  ON memberships (tenant_id);
 
 -- +goose Down
 DROP TABLE memberships;
+ALTER TABLE tenants DROP COLUMN criado_por;
 DROP TABLE usuarios;
 ```
 
 **`usuarios` não tem `tenant_id`.** É deliberado: o mesmo e-mail pode pertencer a
 mais de um tenant, e o vínculo mora em `memberships`. Colocar `tenant_id` aqui
 obrigaria a mesma pessoa a ter contas e senhas separadas por empresa.
+
+**`tenants.criado_por` entra aqui, por `ALTER TABLE`.** A 002 já foi mergeada (e
+migration que já rodou não se edita), e `usuarios` só existe a partir desta. O
+`Down` tira a coluna antes de apagar `usuarios`. `ON DELETE RESTRICT`, não
+`CASCADE`: com `CASCADE`, apagar a conta do criador apagaria a empresa. Aponta
+para `usuarios`, não para `memberships`, para não criar ciclo entre `tenants` e
+`memberships`. O signup (2.2) grava, na mesma transação, `usuarios` → `tenants`
+(com `criado_por`) → `memberships` (owner) — sem ciclo, porque `usuarios` não tem
+`tenant_id`. Proteger o criador (ninguém o remove; só ele remove outro owner) é
+regra do endpoint de remoção (5.8), com teste, sem trigger. Sem índice: a coluna
+não é filtro de consulta.
+
+⚠️ **Banco de dev com linhas em `tenants`:** o `ADD COLUMN ... NOT NULL` falha. Ao
+atualizar, rode `goose down-to 0` (ou `docker compose down -v`) antes do `goose up`.
+
+**Dois papéis: `owner` e `prestador`.** O owner administra a empresa e também pode
+atender: a FK de `agendamentos.prestador_id` aponta para `memberships`, não para o
+papel, então um owner é prestador de agendamento sem mudança no schema. O que cada
+papel pode fazer é regra da API (`requisitos.md` §9).
 
 **Unicidade por `lower(email)`, não por `email`.** `UNIQUE` direto na coluna deixa
 `Davi@x.com` e `davi@x.com` criarem duas contas — e o login de uma nunca encontra
@@ -194,8 +254,16 @@ o que garante, **no banco**, que um prestador pertence ao tenant do agendamento.
 **`removido_em` em vez de `DELETE`.** Como `agendamentos` referencia
 `memberships` com `ON DELETE RESTRICT`, remover fisicamente um prestador que já
 atendeu alguém é impossível. Sem exclusão lógica, não existe "tirar o funcionário
-da equipe" — só erro de chave estrangeira. Queries de listagem filtram
-`removido_em IS NULL`.
+da equipe" — só erro de chave estrangeira.
+
+Quem exige membership ativo (`removido_em IS NULL`): a sessão, revalidada a cada
+requisição (remover corta o acesso na hora); criar agendamento ou disponibilidade;
+e o cálculo de slots (6.3), via `JOIN memberships ... removido_em IS NULL`. Quem
+**não** filtra: o seletor de prestador do owner e o financeiro por prestador, que
+mostram os removidos marcados "(removido)" — o owner ainda conclui os
+agendamentos passados de quem saiu. As disponibilidades do removido ficam no banco
+(o `CASCADE` da 006 só vale para `DELETE` físico), e a remoção cancela em lote os
+agendamentos futuros dele (5.8).
 
 **`papel` como `text` + `CHECK`, não `ENUM`.** Tipo `ENUM` é difícil de alterar:
 adicionar valor é fácil, remover ou renomear exige recriar o tipo e reescrever
@@ -276,11 +344,13 @@ CREATE TABLE servicos (
   tenant_id       uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   nome            text NOT NULL,
   duracao_minutos int  NOT NULL,
+  preco_centavos  integer NOT NULL,      -- sem DEFAULT: seed e API sempre informam
   ativo           boolean NOT NULL DEFAULT true,
   criado_em       timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   CONSTRAINT servicos_id_tenant UNIQUE (id, tenant_id),
-  CONSTRAINT duracao_positiva CHECK (duracao_minutos > 0 AND duracao_minutos <= 1440)
+  CONSTRAINT duracao_positiva CHECK (duracao_minutos > 0 AND duracao_minutos <= 1440),
+  CONSTRAINT preco_nao_negativo CHECK (preco_centavos >= 0)
 );
 
 CREATE INDEX idx_servicos_tenant ON servicos (tenant_id);
@@ -292,9 +362,15 @@ DROP TABLE servicos;
 `ativo` em vez de `DELETE`. Apagar um serviço quebra o histórico de agendamentos
 que apontam para ele. A listagem no frontend filtra `ativo = true`.
 
+`preco_centavos` segue §Dinheiro. **Sem `DEFAULT`** de propósito: com `DEFAULT 0`,
+serviço cadastrado sem preço ficaria grátis em silêncio e o financeiro sairia
+zerado sem ninguém notar. Só o owner gerencia serviços e preços (6.1).
+
 `agendamentos.fim` é gravado, não derivado de `duracao_minutos`: a duração do
 serviço pode mudar, e o agendamento antigo tem que continuar contando a história
-do horário que foi realmente reservado.
+do horário que foi realmente reservado. Mesma justificativa para
+`agendamentos.valor_centavos`: o preço do serviço muda, e o agendamento guarda o
+valor da época (ver 007).
 
 ## 006 — disponibilidades
 
@@ -344,6 +420,7 @@ CREATE TABLE agendamentos (
   inicio        timestamptz NOT NULL,
   fim           timestamptz NOT NULL,
   status        text NOT NULL DEFAULT 'confirmado',
+  valor_centavos integer NOT NULL,      -- copiado de servicos.preco_centavos
   observacoes   text,
   criado_em     timestamptz NOT NULL DEFAULT now(),
   atualizado_em timestamptz NOT NULL DEFAULT now(),
@@ -356,7 +433,8 @@ CREATE TABLE agendamentos (
   FOREIGN KEY (prestador_id, tenant_id)
     REFERENCES memberships (usuario_id, tenant_id) ON DELETE RESTRICT,
   CONSTRAINT status_valido     CHECK (status IN ('confirmado','cancelado','concluido')),
-  CONSTRAINT intervalo_valido  CHECK (fim > inicio)
+  CONSTRAINT intervalo_valido  CHECK (fim > inicio),
+  CONSTRAINT valor_nao_negativo CHECK (valor_centavos >= 0)
 );
 
 ALTER TABLE agendamentos ADD CONSTRAINT sem_sobreposicao
@@ -366,8 +444,9 @@ EXCLUDE USING gist (
   tstzrange(inicio, fim, '[)') WITH &&
 ) WHERE (status <> 'cancelado');
 
-CREATE INDEX idx_agendamentos_tenant_inicio ON agendamentos (tenant_id, inicio);
-CREATE INDEX idx_agendamentos_cliente       ON agendamentos (tenant_id, cliente_id);
+CREATE INDEX idx_agendamentos_tenant_inicio    ON agendamentos (tenant_id, inicio);
+CREATE INDEX idx_agendamentos_cliente          ON agendamentos (tenant_id, cliente_id);
+CREATE INDEX idx_agendamentos_prestador_inicio ON agendamentos (tenant_id, prestador_id, inicio);
 
 -- +goose Down
 DROP TABLE agendamentos;
@@ -395,9 +474,11 @@ só o banco resolve isso.
   por um agendamento cancelado.
 - A constraint vale por **prestador**, não por cliente: o mesmo cliente pode, em
   tese, ter dois agendamentos simultâneos com prestadores diferentes. Se isso não
-  for desejado, é uma segunda constraint — decidam explicitamente.
+  for desejado, é uma segunda constraint — decidam explicitamente. O owner que
+  atende entra na mesma regra, sem mudança: é um `prestador_id` como outro qualquer.
 - Violação chega no Go como `SQLSTATE 23P01` (`exclusion_violation`) e precisa
-  virar **HTTP 409**, não 500:
+  virar **HTTP 409**, não 500 — no `POST` (1.5) e no `PATCH` que remarca ou troca
+  o serviço (5.1), que dispara a constraint de novo:
 
 ```go
 var pgErr *pgconn.PgError
@@ -405,6 +486,24 @@ if errors.As(err, &pgErr) && pgErr.Code == "23P01" {
     return ErrHorarioIndisponivel
 }
 ```
+
+**Ciclo de vida, sem `DELETE`.** O status nasce `confirmado`. Concluir só com
+`inicio <= now()`; cancelar a qualquer momento enquanto `confirmado`; `cancelado` e
+`concluido` são finais; remarcar e trocar serviço só em `confirmado`. O agendamento
+nunca é apagado: a 009 tira o `DELETE` do `app_user`. Como aplicar a regra sem
+corrida está em §Acesso a dados (operações por id).
+
+**`valor_centavos`: copiado na criação; recopiado só ao trocar o serviço (novo
+`fim` + sobreposição); remarcar mantém.** O `INSERT` copia `servicos.preco_centavos`
+na mesma instrução, nunca do payload. Remarcar grava
+`fim = novo inicio + (fim − inicio)`, não a `duracao_minutos` atual do serviço.
+Trocar o serviço só vale em `confirmado` e para serviço ativo:
+`fim = inicio + duracao_minutos` do novo serviço, valor recopiado, e a constraint
+de sobreposição roda de novo.
+
+**`idx_agendamentos_prestador_inicio`.** Agenda com escopo por prestador,
+calendário e financeiro filtram por `(tenant_id, prestador_id)` e período. O mesmo
+índice cobre a FK do prestador.
 
 `atualizado_em` precisa de trigger ou de disciplina no repositório. Trigger é mais
 confiável — ninguém esquece:
@@ -473,7 +572,8 @@ junto com todo o histórico e a consulta do worker degrada com o tempo.
 **não** para a coluna que referencia. O cancelamento roda
 `UPDATE notificacoes SET status='descartado' WHERE agendamento_id = $1 AND status='pendente'`,
 que sem `idx_notificacoes_agendamento` vira varredura sequencial — e a mesma falta
-de índice deixa lento o `CASCADE` quando um agendamento é apagado.
+de índice deixa lento o `CASCADE` quando a empresa é excluída (agendamento não se
+apaga de outro jeito).
 
 `ON DELETE CASCADE` aqui, ao contrário de `agendamentos`: notificação sem
 agendamento é dado órfão puro.
@@ -504,12 +604,28 @@ CREATE POLICY isolamento_tenant ON clientes
 -- repetir o bloco acima para servicos, disponibilidades,
 -- agendamentos e notificacoes
 
+-- agendamento nunca é apagado: só cancelado ou concluído
+REVOKE DELETE ON agendamentos FROM app_user;
+
 -- +goose Down
+GRANT DELETE ON agendamentos TO app_user;
 DROP POLICY isolamento_tenant ON clientes;
 -- ... demais tabelas
 ALTER TABLE clientes DISABLE ROW LEVEL SECURITY;
 -- ... demais tabelas
 ```
+
+**`REVOKE DELETE` aqui, não na 007.** O `ALTER DEFAULT PRIVILEGES` do script da
+0.15 (§Usuário de aplicação) concede `DELETE` no instante em que a tabela nasce,
+então o `REVOKE` precisa vir depois do `CREATE`. Fica na 009, junto das outras
+regras de acesso do `app_user`, porque é a 0.14 que já depende da 0.15 (o
+`app_user` precisa existir); a 0.12 não depende. Com isso, `DELETE FROM
+agendamentos` como `app_user` falha com `42501`. Duas consequências:
+
+- O `app_user` precisa existir antes do `goose up`. No compose já existe (o script
+  roda no `initdb`); no CI (0.17), rode o script antes das migrations.
+- O teste de exclusão de tenant (0.18) não é afetado: roda como dono das tabelas, e
+  o `CASCADE` executa com o privilégio do dono.
 
 ### Três armadilhas que fazem o RLS parecer ligado sem estar
 
@@ -541,19 +657,25 @@ _, err = tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1, true)", tenantID)
    empresa — que depois fica invisível para todo mundo, inclusive para quem
    deveria vê-la.
 
-### Por que `usuarios`, `memberships` e `tenants` ficam de fora
+### Por que `usuarios`, `memberships`, `tenants`, `sessoes` e `convites` ficam de fora
 
 Exceção deliberada, e precisa estar escrita para não parecer esquecimento: essas
 tabelas são consultadas **antes** de existir contexto de tenant. No login o
-sistema ainda não sabe qual é o tenant — é `memberships` que responde isso.
-Aplicar policy nelas cria dependência circular.
+sistema ainda não sabe qual é o tenant — é `memberships` que responde isso. A
+sessão é lida pelo cookie justamente para descobrir o tenant, e o aceite de
+convite acha o convite pelo token. Aplicar policy nelas cria dependência circular.
 
 Duas consequências a carregar:
 
 - São as **únicas** tabelas onde o `WHERE` manual é obrigatório. A rede de
-  segurança não cobre essas três.
+  segurança não cobre essas cinco. Em `convites`: listar e criar com
+  `WHERE tenant_id = $1` manual; o lookup por token roda sem tenant, e o aceite
+  exige sessão com o mesmo e-mail do convite.
 - `tenants` legível por qualquer sessão significa que **segredo por tenant não
   pode morar lá** (ver nota na 002).
+
+O RLS também não separa prestadores da mesma empresa: esse escopo é filtro na
+query, sem policy extra (§Acesso a dados).
 
 ## 010 — sessoes
 
@@ -598,7 +720,7 @@ CREATE TABLE convites (
   aceito_em  timestamptz,
   criado_por uuid NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
   criado_em  timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT convite_papel_valido CHECK (papel IN ('owner','prestador','atendente')),
+  CONSTRAINT convite_papel_valido CHECK (papel IN ('owner','prestador')),
   CONSTRAINT convite_token_unico  UNIQUE (token)
 );
 
@@ -609,8 +731,22 @@ DROP TABLE convites;
 ```
 
 Mesmo padrão do `vinculo_token`: token único, com prazo e de uso único. RF12 é
-prioridade média e ainda não tem item no backlog — a migration pode esperar, mas a tabela precisa existir no
-desenho desde já para ninguém inventar convite por e-mail sem registro.
+prioridade alta e entra na Fatia 2 (2.17 a 2.20); a remoção de membro, na 5.8. A
+tabela está no desenho desde a v1.1 para ninguém inventar convite por e-mail sem
+registro.
+
+- **Papel do convite: `owner` ou `prestador`.** Owner convida owner; o criador da
+  empresa (`tenants.criado_por`) fica protegido pela regra do endpoint de remoção,
+  não pelo banco.
+- **Aceite reativa membership removido.** Quem já saiu tem membership com
+  `removido_em` preenchido, e o `UNIQUE (usuario_id, tenant_id)` da 003 faz um
+  `INSERT` simples falhar. O aceite é
+  `INSERT ... ON CONFLICT (usuario_id, tenant_id) DO UPDATE SET removido_em = NULL, papel = EXCLUDED.papel`.
+- **Respostas:** convite para e-mail que já tem membership ativo no tenant → 409
+  `convite_invalido`; convite expirado ou já aceito → 409 `convite_invalido`; token
+  inexistente → 404.
+- **Fora do RLS** (ver 009): `WHERE tenant_id` manual para listar e criar; lookup
+  por token sem tenant; aceite só com sessão cujo e-mail é o do convite.
 
 ## Usuário de aplicação (`app_user`)
 
@@ -635,7 +771,7 @@ roda `docker compose down -v` uma vez), e no CI da 0.17, via `psql`, porque o
 script que roda igual nos dois.
 
 O `ALTER DEFAULT PRIVILEGES` evita ter que lembrar de dar `GRANT` toda vez que uma
-tabela nova for criada.
+tabela nova for criada. A exceção é `DELETE` em `agendamentos`, que a 009 revoga.
 
 ## Seed e teste de isolamento
 
@@ -643,13 +779,20 @@ O seed cria **dois tenants** desde o primeiro dia, com dados reconhecíveis. Um
 tenant só não testa isolamento — é como testar autenticação com um único usuário.
 
 ```sql
-INSERT INTO tenants (id, nome, slug) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Barbearia Alfa', 'alfa'),
-  ('22222222-2222-2222-2222-222222222222', 'Clinica Beta',   'beta');
+-- ordem: usuarios → tenants (criado_por é NOT NULL) → memberships
+INSERT INTO tenants (id, nome, slug, criado_por) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'Barbearia Alfa', 'alfa', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+  ('22222222-2222-2222-2222-222222222222', 'Clinica Beta',   'beta', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
 ```
 
 UUIDs fixos e legíveis no seed facilitam depuração. Em produção nunca, no seed
 sempre.
+
+Os usuários `aaaa…` e `bbbb…` entram antes, e cada um ganha depois a membership
+`owner` do tenant que criou. No Alfa, o owner criador também atende (tem
+agendamentos como `prestador_id`) e há mais um usuário com papel `prestador`, para
+demonstrar o escopo por prestador. Todo serviço tem `preco_centavos`, e todo
+agendamento, `valor_centavos` igual ao preço do seu serviço.
 
 **Dados fictícios por padrão.** Nada de telefone ou `chat_id` real no `seed.sql`,
 mesmo sendo projeto de estudo. O arquivo vai para o repositório e fica lá para
@@ -804,6 +947,71 @@ Regras:
 - **Erros do Postgres** chegam como `*pgconn.PgError` (ver `23P01` na 007);
   `pgx.ErrNoRows` é o "não encontrado" de `:one`.
 
+### Escopo por prestador (2.7) e operações por id
+
+O RLS separa empresas; dentro da empresa, quem separa prestadores é a query, sem
+policy extra.
+
+**Listagens, financeiro e `.ics`: filtro na query.**
+
+```sql
+-- name: ListarAgendamentos :many
+SELECT id, cliente_id, prestador_id, inicio, fim, status
+FROM agendamentos
+WHERE tenant_id = @tenant_id
+  AND inicio >= @de AND inicio < @ate
+  AND (sqlc.narg('prestador_id')::uuid IS NULL OR prestador_id = sqlc.narg('prestador_id'))
+ORDER BY inicio;
+```
+
+Com `emit_pointers_for_null_types`, `prestador_id` vira `*uuid.UUID` — e um `nil`
+por bug devolve a empresa inteira, sem o RLS como rede (é o mesmo tenant). Por isso
+o handler nunca monta esse filtro: recebe um `Escopo` pronto do middleware da 2.7.
+
+```go
+// Escopo é construído só pelo middleware da 2.7, a partir da sessão.
+type Escopo struct {
+    TenantID    uuid.UUID
+    PrestadorID *uuid.UUID // prestador: sempre o da sessão; owner: o do seletor ou nil
+}
+```
+
+- Papel `prestador`: `PrestadorID` é sempre o usuário da sessão; `prestador_id` de
+  outro na query string → 403 `sem_permissao`.
+- Papel `owner`: `PrestadorID` vem do seletor (query string) ou fica `nil` (a
+  empresa toda).
+- Vale para agendamentos, slots (6.3), log de notificações (6.8), reenvio (RF13),
+  financeiro e `.ics`.
+
+**Período no fuso do tenant.** A semana do calendário e o mês do financeiro contam
+pelo `inicio`, no fuso do tenant (RNF01), não em UTC. Os limites saem do Go
+(`time.LoadLocation(tenant.FusoHorario)`) e entram como `timestamptz` (`@de` e
+`@ate` na query acima). O financeiro soma `valor_centavos` dos `concluido`
+(§Dinheiro).
+
+**Operações por id (GET, PATCH, cancelar, concluir): trava, compara, atualiza.**
+Com o filtro na query, agendamento de outro prestador viraria `pgx.ErrNoRows` e
+404 — mas a regra é 403. Por isso a operação busca no tenant, sem filtro de
+prestador, e decide em Go:
+
+```sql
+-- name: TravarAgendamento :one
+SELECT id, prestador_id, servico_id, status, inicio, fim
+FROM agendamentos
+WHERE tenant_id = $1 AND id = $2
+FOR UPDATE;
+```
+
+1. Sem linha → 404 `nao_encontrado` (outro tenant cai aqui, pelo RLS).
+2. `prestador_id` diferente do usuário da sessão e papel diferente de owner → 403
+   `sem_permissao`.
+3. Status que não permite a transição → 409 `status_invalido`.
+4. Só então o `UPDATE`, na mesma transação.
+
+Concluir usa o relógio do banco, dentro do lock:
+`UPDATE agendamentos SET status = 'concluido' WHERE tenant_id = $1 AND id = $2 AND status = 'confirmado' AND inicio <= now()`;
+zero linhas atualizadas → 409 `status_invalido` (o horário ainda não começou).
+
 ## Checklist de conclusão da Fatia 0
 
 - [ ] Todas as migrations rodam do zero em banco vazio (`goose up`)
@@ -818,6 +1026,11 @@ Regras:
 - [ ] `DELETE FROM tenants` roda sem erro de chave estrangeira *(novo)*
 - [ ] Cadastrar `Davi@x.com` e `davi@x.com` falha na segunda vez *(novo)*
 - [ ] Toda FK usada em filtro tem índice explícito *(novo)*
+- [ ] `INSERT` em `memberships` ou `convites` com papel que não seja `owner` nem
+      `prestador` falha *(v1.4)*
+- [ ] Preço ou valor negativo falha (`servicos.preco_centavos`,
+      `agendamentos.valor_centavos`); serviço sem preço falha *(v1.4)*
+- [ ] `DELETE FROM agendamentos` como `app_user` falha (`42501`) *(v1.4)*
 
 O quarto item é o mais esquecido: quase toda equipe escreve a constraint de
 sobreposição e só testa o caso que deve falhar. Se `'[)'` virar `'[]'` por

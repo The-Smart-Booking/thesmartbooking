@@ -6,7 +6,34 @@ quando cards forem criados ou apagados (uma fatia por vez), num PR `docs`.
 
 Dependências copiadas do "Depende de" de cada issue — o corpo da issue é o contrato.
 
-Conferido em 25/09/2026.
+Conferido em 02/10/2026.
+
+## Mudanças de 02/10/2026 (backlog v2.2)
+
+Decisões de papéis, agenda e financeiro (`requisitos.md` v0.8). Títulos e
+dependências não mudaram; mudou o corpo destes cards, já editado no board
+(rodapé "Atualizado em 02/10/2026"):
+
+| Card | Item | O que mudou |
+|---|---|---|
+| #65 | 0.9 | `CHECK` de papel só com owner e prestador; `ALTER TABLE tenants ADD COLUMN criado_por` (a 002 não muda) |
+| #67 | 0.11 | `servicos.preco_centavos` sem `DEFAULT`, com `CHECK >= 0` |
+| #68 | 0.12 | `valor_centavos` com `CHECK >= 0`; índice `idx_agendamentos_prestador_inicio`; owner como prestador |
+| #70 | 0.14 | `REVOKE DELETE ON agendamentos FROM app_user`; cinco tabelas fora do RLS; sem policy por prestador |
+| #72 | 0.16 | Ordem `usuarios` → `tenants` → `memberships`; no Alfa, owner criador que atende + 1 prestador; preços |
+| #52 | 1.5 | Grava `valor_centavos` copiado do serviço; só prestador com membership ativo |
+| #53 | 1.6 | `prestador_id` opcional, sem regra de sessão (fica na 2.7) |
+| #57 | 1.10 | Continua lista simples; o calendário semanal é a 7.1 |
+
+Ainda falta ajustar no board:
+
+| Card | Item | O que muda |
+|---|---|---|
+| #73 | 0.17 | Rodar o script do `app_user` (0.15) antes do `goose up`: a 009 faz `REVOKE` para o `app_user` |
+
+Itens novos do backlog, sem card ainda: 2.16 a 2.20, 5.8, 6.5a e 6.5b (a 6.5 foi
+dividida) e 7.1 a 7.7 (Fatia 7 Acompanhar). Entregar passou a ser a Fatia 8 (8.1
+a 8.7).
 
 ## Fatia 0 — Fundação
 
