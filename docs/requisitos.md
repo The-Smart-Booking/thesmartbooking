@@ -1,9 +1,26 @@
 # Requisitos — Smart Booking
 
 Sistema de agendamentos multi-tenant com notificação via Telegram.
-Documento de requisitos e decisões técnicas — **v0.7** · 02/10/2026
+Documento de requisitos e decisões técnicas — **v0.8** · 02/10/2026
 
 > Fonte da verdade: este arquivo. A pasta do Drive é histórico.
+
+## Mudanças desde a v0.7
+
+Decisões do grupo de 02/10/2026: papéis, agenda e financeiro.
+
+| # | O que mudou | Onde |
+|---|---|---|
+| 1 | Papéis por tenant: só owner e prestador; o owner também pode atender | 3, 7, 9, 14 |
+| 2 | Agendamento nunca é excluído: reagendar, cancelar e concluir, com regra de transição | 3, 5.1, 7 |
+| 3 | Escopo por prestador dentro da empresa (RF15, RNF11) | 3, 4, 6.2, 9, 11 |
+| 4 | Convite e remoção de membros; criador da empresa (`tenants.criado_por`) protegido | 3, 5.1, 7, 9 |
+| 5 | Preço por serviço e valor no agendamento, em centavos (RF18) | 3, 7 |
+| 6 | Calendário semanal, resumo financeiro mensal e exportação `.ics` (RF14, RF16, RF17) | 3, 10 |
+| 7 | `sessoes` e `convites` também ficam fora do RLS | 6.2 |
+| 8 | Botão Confirmar do Telegram não muda status | 8.6 |
+| 9 | Fatia nova T7 Acompanhar; Entregar passa a T8; estimativa recalculada (~474h) | 10, 11, 13 |
+| 10 | Decisões de 02/10/2026 registradas; seção nova com o que fica fora do escopo | 12, 14 |
 
 ## Mudanças desde a v0.6
 
@@ -49,8 +66,8 @@ entre os dois documentos era o risco: quem copiasse daqui levava a versão bugad
 
 ## 1. Visão geral
 
-Plataforma web multi-tenant para gestão de agendamentos. Cada tenant
-(empresa/prestador) tem seus próprios usuários, serviços, horários e clientes,
+Plataforma web multi-tenant para gestão de agendamentos. Cada tenant (empresa)
+tem seus próprios usuários (owners e prestadores), serviços, horários e clientes,
 isolados dos demais. Notificações de lembrete enviadas via bot do Telegram.
 
 **Stack:** API em Go, frontend em React, banco PostgreSQL (acesso via pgx v5 +
@@ -72,19 +89,31 @@ caro e propenso a erro.
 | ID | Requisito | Prioridade |
 |---|---|---|
 | RF01 | Cadastro e login de usuário (e-mail + senha) | Alta |
-| RF02 | Cadastro de tenant com um usuário owner inicial | Alta |
-| RF03 | Papéis por tenant: owner, prestador, atendente | Alta |
+| RF02 | Cadastro de tenant com um usuário owner inicial, o criador (`tenants.criado_por`) | Alta |
+| RF03 | Papéis por tenant: owner e prestador; o owner também pode atender | Alta |
 | RF04 | Isolamento total de dados entre tenants | Alta |
-| RF05 | CRUD de agendamentos (criar, listar, editar, cancelar) | Alta |
+| RF05 | Agendamentos: criar, listar, reagendar, cancelar e concluir; nunca excluídos. O prestador só opera os próprios (RF15) | Alta |
 | RF06 | Definição de horários disponíveis por prestador | Alta |
 | RF07 | Bloqueio de conflito de horário (double booking) | Alta |
 | RF08 | Vinculação do cliente ao Telegram via deep link | Alta |
 | RF09 | Envio automático de lembrete X horas antes | Alta |
 | RF10 | Confirmação/cancelamento pelo cliente via botão inline | Média |
 | RF11 | Log de mensagens enviadas com status | Média |
-| RF12 | Convite de novos usuários para um tenant | Média |
+| RF12 | Convite e remoção de membros: o owner convida owners e prestadores e remove prestadores; só o criador remove owner; o criador não é removível | Alta |
 | RF13 | Reenvio manual de notificação | Baixa |
-| RF14 | Visualização em calendário | Baixa |
+| RF14 | Calendário semanal: eixo de horas, navegação entre semanas, cor por status e seletor de prestador para o owner | Média |
+| RF15 | Escopo por prestador: o prestador vê e opera só os próprios agendamentos (agenda, slots, log, reenvio, financeiro, `.ics`); o owner vê todos, com seletor. Garantia em RNF11 | Alta |
+| RF16 | Resumo financeiro mensal dos agendamentos concluídos: o próprio, para o prestador; total e por prestador, para o owner | Média |
+| RF17 | Exportar a agenda do período para o calendário do celular (download de `.ics`) | Baixa |
+| RF18 | Preço por serviço, em centavos; o valor do agendamento é copiado na criação; recopiado só ao trocar o serviço (novo `fim` + sobreposição); remarcar mantém | Alta |
+
+**Ciclo de vida do agendamento (RF05).** Nasce `confirmado`. Concluir só com
+`inicio <= now()`; cancelar a qualquer momento enquanto `confirmado`; `cancelado` e
+`concluido` são finais; remarcar e trocar serviço só em `confirmado`. Transição
+fora disso responde 409 `status_invalido`.
+
+**Clientes são da empresa**, não do prestador: todos os membros do tenant veem e
+agendam os mesmos clientes. Só o owner gerencia serviços e preços.
 
 ## 4. Requisitos não funcionais
 
@@ -103,6 +132,10 @@ caro e propenso a erro.
 - **RNF10** *(novo)* — Todo update recebido do Telegram é autenticado pelo
   `secret_token` do webhook. Endpoint sem essa verificação aceita `/start`
   forjado de qualquer origem.
+- **RNF11** *(v0.8)* — Escopo por prestador (RF15) garantido no backend: o filtro
+  sai da sessão, pelo `Escopo` que o middleware monta (2.7), nunca do payload;
+  prestador que pede `prestador_id` de outro recebe 403. Coberto por teste (2.16).
+  Esconder na tela não é autorização.
 
 ## 5. Arquitetura
 
@@ -129,12 +162,15 @@ Três tipos de notificação, dois mecanismos:
 | Tipo | Disparo | Momento do envio |
 |---|---|---|
 | `confirmacao` | Evento (criação do agendamento) | Imediato |
-| `cancelamento` | Evento (cancelamento) | Imediato |
+| `cancelamento` | Evento (cancelamento, inclusive em lote ao remover um membro) | Imediato |
 | `lembrete` | Agendado | X horas antes do início |
 
+Concluir não gera notificação.
+
 1. A API insere a linha em `notificacoes` **na mesma transação** que cria ou
-   cancela o agendamento. Nunca existe agendamento sem notificação nem
-   notificação sem agendamento.
+   cancela o agendamento, ou que remove um membro (cancelamento em lote dos
+   agendamentos futuros dele, item 5.8). Nunca existe agendamento sem
+   notificação nem notificação sem agendamento.
 2. `agendar_para` define quando: `NULL` para eventos imediatos,
    `inicio - antecedencia` para o lembrete.
 3. O worker consome a fila sem saber quem produziu a linha:
@@ -152,9 +188,9 @@ LIMIT 50;
 O `versao` existe porque um agendamento reagendado precisa de lembrete novo — a
 linha antiga vira `descartado` e uma nova entra com `versao + 1`.
 
-**Cancelamento cancela o lembrete.** Ao cancelar, a linha de lembrete pendente
-vai para `descartado` na mesma transação. Sem isso, o cliente recebe o
-cancelamento e, horas depois, o lembrete do mesmo compromisso.
+**Cancelamento cancela o lembrete.** Ao cancelar, as linhas pendentes de lembrete
+e de confirmação vão para `descartado` na mesma transação. Sem isso, o cliente
+recebe o cancelamento e, horas depois, o lembrete do mesmo compromisso.
 
 ## 6. Multi-tenancy
 
@@ -221,14 +257,20 @@ e entrega `Queries.WithTx(tx)` (ver `docs/guia-banco-de-dados.md`).
 
 **Exceções ao RLS, e por quê.** `usuarios` e `memberships` ficam de fora: são
 consultadas *antes* de existir contexto de tenant (no login o sistema ainda não
-sabe qual é o tenant — é `memberships` que responde isso). Consequência a
-carregar: **essas são as duas únicas tabelas onde o `WHERE` manual é obrigatório**
-e a rede de segurança não existe.
+sabe qual é o tenant — é `memberships` que responde isso). `sessoes` e `convites`
+pelo mesmo motivo: é a sessão que diz o tenant, e o aceite acha o convite pelo
+token, sem tenant. Consequência a carregar: **nessas quatro tabelas e em `tenants`
+(abaixo), o `WHERE` manual é obrigatório** e a rede de segurança não existe.
 
 `tenants` também fica de fora pelo mesmo motivo (o login resolve o slug antes do
 contexto). Por isso, **segredo por tenant não pode morar nessa tabela**: quando
 `telegram_bot_token` passar a ser usado, ele sai para uma tabela própria com
 policy, ou para o gerenciador de segredos.
+
+**O RLS isola empresas, não prestadores.** Dentro da empresa, o escopo por
+prestador (RF15) é filtro na query, sem policy extra: o repositório recebe o
+`Escopo` montado pelo middleware a partir da sessão (RNF11; guia de banco,
+§Acesso a dados).
 
 ### 6.3 Usuário pertence a um ou a vários tenants?
 
@@ -239,18 +281,20 @@ produção.
 ## 7. Modelo de dados
 
 ```
-tenants(id, nome, slug UNIQUE, fuso_horario, telegram_bot_token NULL, criado_em)
+tenants(id, nome, slug UNIQUE, fuso_horario, telegram_bot_token NULL,
+        criado_por,                    -- usuarios: o criador da empresa
+        criado_em)
 
 usuarios(id, email, senha_hash, nome, criado_em,
          UNIQUE(lower(email)))          -- e-mail normalizado
 
-memberships(id, usuario_id, tenant_id, papel, removido_em NULL,
-            UNIQUE(usuario_id, tenant_id))
+memberships(id, usuario_id, tenant_id, papel IN ('owner','prestador'),
+            removido_em NULL, UNIQUE(usuario_id, tenant_id))
 
 sessoes(id, usuario_id, tenant_id NULL, expira_em, criado_em, revogado_em NULL)
 
-convites(id, tenant_id, email, papel, token UNIQUE, expira_em,
-         aceito_em NULL, criado_por)
+convites(id, tenant_id, email, papel IN ('owner','prestador'), token UNIQUE,
+         expira_em, aceito_em NULL, criado_por)
 
 clientes(id, tenant_id, nome,
          telefone TEXT NULL,            -- contato manual apenas, NÃO é canal
@@ -260,14 +304,15 @@ clientes(id, tenant_id, nome,
          removido_em NULL,
          UNIQUE(id, tenant_id), UNIQUE(tenant_id, telegram_chat_id))
 
-servicos(id, tenant_id, nome, duracao_minutos, ativo,
+servicos(id, tenant_id, nome, duracao_minutos, preco_centavos, ativo,
          UNIQUE(id, tenant_id))
 
 disponibilidades(id, tenant_id, prestador_id, dia_semana, hora_inicio, hora_fim)
 
 agendamentos(id, tenant_id, cliente_id, servico_id, prestador_id,
-             inicio TIMESTAMPTZ, fim TIMESTAMPTZ, status, observacoes,
-             criado_em, atualizado_em,
+             inicio TIMESTAMPTZ, fim TIMESTAMPTZ, status,
+             valor_centavos,             -- preço do serviço, copiado
+             observacoes, criado_em, atualizado_em,
              UNIQUE(id, tenant_id))
 
 notificacoes(id, tenant_id, agendamento_id, tipo, versao, status,
@@ -308,6 +353,19 @@ filtro precisa de índice explícito — em especial
 `memberships.removido_em`. Como `agendamentos` referencia os três com
 `ON DELETE RESTRICT`, exclusão física fica bloqueada na prática assim que existir
 histórico — e apagar registro apontado por agendamento destruiria esse histórico.
+**Agendamento nunca é apagado:** termina `cancelado` ou `concluido`, e o `app_user`
+nem tem `DELETE` nessa tabela (migration 009).
+
+**Preço e valor (RF18).** Dinheiro em centavos inteiros (`integer`, sufixo
+`_centavos`), nunca `money` nem `float`. `servicos.preco_centavos` não tem
+`DEFAULT`: serviço sem preço ficaria grátis em silêncio. `agendamentos.valor_centavos`
+é copiado na criação; recopiado só ao trocar o serviço (novo `fim` + sobreposição);
+remarcar mantém. Mesma lógica do `fim` gravado: o preço do serviço muda, e o
+agendamento guarda o valor da época.
+
+**Criador da empresa.** `tenants.criado_por` aponta para `usuarios` com
+`ON DELETE RESTRICT` e é gravado pelo signup. Ninguém remove o criador, e só ele
+remove outro owner (regra do endpoint de remoção, item 5.8).
 
 ## 8. Telegram
 
@@ -371,6 +429,13 @@ qualquer um faz POST forjando `/start <token>` ou um `callback_query` de
 cancelamento. No `setWebhook`, passe `secret_token`; a cada update, compare com o
 header `X-Telegram-Bot-Api-Secret-Token` e rejeite com 401 quando não bater.
 
+### 8.6 Botões inline (RF10)
+
+O agendamento já nasce `confirmado`, então o botão **Confirmar** não muda status:
+só registra a confirmação de presença e edita a mensagem (item 5.7). **Cancelar**
+segue o mesmo caminho do cancelamento pelo sistema (item 5.2). Decidido em
+02/10/2026.
+
 ## 9. Autenticação e autorização
 
 - **Autenticação** — quem é o usuário. E-mail + senha.
@@ -381,7 +446,11 @@ Regras não negociáveis:
 1. O `tenant_id` sai da sessão, **nunca** do payload da requisição.
 2. Middleware obrigatório que extrai o tenant, valida o membership e injeta no
    contexto antes de qualquer handler.
-3. Verificação de papel por rota (owner convida usuários; atendente, não).
+3. Verificação de papel por rota: só o owner convida e remove membros, gerencia
+   serviços e preços e vê o financeiro da empresa. Papel prestador: toda consulta
+   de agendamento filtra pelo prestador da sessão; owner: seletor opcional (RF15,
+   RNF11). Para o prestador, agendamento de outro prestador do mesmo tenant
+   responde 403; agendamento de outro tenant é 404 para qualquer papel.
 
 **Decisão: sessão de servidor com cookie `HttpOnly` + `Secure` + `SameSite=Lax`**,
 mais simples e mais segura que JWT em `localStorage` para uma SPA. Isso exige a
@@ -389,8 +458,9 @@ tabela `sessoes` — não é só código. Um JWT sem estado parece mais barato a
 primeiro logout que precisa invalidar de verdade.
 
 O `tenant_id` fica **na sessão**, não no token, e é revalidado contra
-`memberships` a cada requisição. Custa uma query e elimina a classe de bug do
-"token continua válido para o tenant antigo".
+`memberships` (com `removido_em IS NULL`) a cada requisição. Custa uma query e
+elimina a classe de bug do "token continua válido para o tenant antigo" — e a
+remoção de um membro corta o acesso na hora.
 
 **Cookie e origem em desenvolvimento.** Com o Vite em `:5173` e a API em `:8080`,
 o cookie `SameSite=Lax` não é enviado nas chamadas da SPA. Use o proxy do Vite
@@ -406,16 +476,18 @@ termina em algo demonstrável. Detalhe, issues e critérios em `docs/backlog.md`
 |---|---|---|
 | T0 Fundação | Repositório, CI, schema com `tenant_id`, RLS, constraint de sobreposição, seed | — |
 | T1 Agendar | Criar e listar agendamentos no navegador, tenant fixo e sem login | T0 |
-| T2 Entrar | Signup, login, sessão, middleware de tenant e papéis | T1 |
+| T2 Entrar | Signup, login, sessão, middleware de tenant, papéis com escopo por prestador e convites | T1 |
 | T3 Avisar | Vinculação por deep link e confirmação imediata no Telegram | T2 |
 | T4 Lembrar | Worker com outbox, idempotência, backoff e tratamento de 429/403 | T3 |
-| T5 Cancelar | Cancelar e reagendar, inclusive por botão inline | T4 |
-| T6 Configurar | Serviços, disponibilidades, slots e fuso por tenant | T1 |
-| T7 Entregar | Deploy e documentação | T0–T6 |
+| T5 Cancelar | Cancelar, reagendar e concluir, inclusive cancelar por botão inline; remoção de membro | T4 |
+| T6 Configurar | Serviços com preço, disponibilidades, slots e fuso por tenant | T1 |
+| T7 Acompanhar | Calendário semanal, resumo financeiro mensal e exportação `.ics` | T5, T6 (6.1) |
+| T8 Entregar | Deploy e documentação | T0–T7 |
 
 **Teste que fecha a Fatia 2:** criar dois tenants, popular ambos, autenticar como
 usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (item
-2.13). Sem esse teste, o isolamento é suposição, não garantia — e ele exige
+2.13); e, dentro do tenant A, que um prestador não vê agendamento de outro (item
+2.16). Sem esses testes, o isolamento é suposição, não garantia — e eles exigem
 **Postgres no CI** (item 0.17), não só `go test`.
 
 ## 11. Riscos
@@ -423,10 +495,11 @@ usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (i
 | Risco | Impacto | Mitigação |
 |---|---|---|
 | Query sem escopo de tenant | Crítico | RLS + repositório + teste automatizado |
+| Vazamento entre prestadores da mesma empresa | Alto | Filtro no repositório (`Escopo`) + teste 2.16 |
 | Cliente nunca abre o deep link | Não recebe lembrete | Estado explícito na UI |
 | Webhook sem autenticação | Update forjado | `secret_token` (RNF10) |
 | Baixa adoção do Telegram | Produto inútil na prática | Decidir cedo |
-| Escopo maior que a equipe | Não entrega | Cortar RF10, RF12, RF14 |
+| Escopo maior que a equipe | Não entrega | Cortar RF10 e RF17; RF14 só em último caso (ordem no backlog) |
 | Equipe sem experiência em Go | Atraso geral | Responsáveis e estudo na semana 1 |
 | Notificação duplicada | Perda de confiança | `UNIQUE` + `SKIP LOCKED` + backoff |
 
@@ -437,7 +510,7 @@ usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (i
 | Multi-tenancy | Shared schema com `tenant_id` + RLS |
 | Telefone do cliente | Contato manual; nunca referenciado pelo worker |
 | Dados pessoais | Seed fictício; finalidade e retenção no README |
-| Criação de tenant | Signup self-service cria tenant + membership owner |
+| Criação de tenant | Signup self-service cria tenant + membership owner e grava `tenants.criado_por` |
 | Bot | Único no MVP, coluna por tenant já prevista |
 | Sessão | Cookie `HttpOnly` + tabela `sessoes` |
 | Papéis | `text` + `CHECK`, não `ENUM` |
@@ -446,6 +519,25 @@ usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (i
 | Rotas da API | Tudo sob `/api`; proxy do Vite sem reescrita |
 | Serviço na Fatia 1 | `SERVICO_FIXO` no config até a 6.6 |
 | Worker × RLS | Laço por tenant com `ComTenant`, como `app_user` |
+
+Decididos em 02/10/2026:
+
+| Tema | Decisão |
+|---|---|
+| Papéis por tenant | `owner` e `prestador`; o owner também pode atender (ser o prestador de um agendamento) |
+| Escopo do prestador | Filtro na query pelo `Escopo` do middleware (2.7), sem policy extra no RLS |
+| Agendamento de outro prestador | 403 `sem_permissao` no mesmo tenant; outro tenant segue 404 |
+| Exclusão de agendamento | Nunca: termina cancelado ou concluído; `app_user` sem `DELETE` na tabela |
+| Concluir e cancelar | Concluir só com `inicio <= now()`; cancelar enquanto `confirmado`; cancelado e concluído são finais |
+| Dinheiro | Centavos em `integer` (sufixo `_centavos`), nunca `money` nem `float` |
+| Valor do agendamento | Copiado na criação; recopiado só ao trocar o serviço (novo `fim` + sobreposição); remarcar mantém |
+| Serviços e preços | Só o owner gerencia |
+| Convites | Owner convida owner ou prestador; o criador não é removível e só ele remove outro owner |
+| Remoção de membro | Cancela em lote os agendamentos futuros (`inicio > now()`) e avisa os clientes, na mesma transação |
+| Exportação | Download de `.ics` (fotografia do período), sem feed |
+| Disponibilidade de outros | O owner edita a de qualquer prestador; o prestador, só a própria |
+| Botão Confirmar | Só registra a presença e edita a mensagem; não muda status |
+| Corte de escopo | RF12, RF14, 5.3, 6.1 e 6.5a protegidos; na Fatia 7, cortar `.ics` → financeiro por prestador → calendário (último recurso; fica a lista da 1.10) |
 
 ## 13. Estimativa de prazo
 
@@ -456,20 +548,22 @@ Base: 3 pessoas × ~5h/semana = 15h/semana nominais. Esforço por fatia no
 |---|---|
 | T0 Fundação | 63h |
 | T1 Agendar | 46h |
-| T2 Entrar | 59h |
-| T3 Avisar | 68h |
+| T2 Entrar | 81h |
+| T3 Avisar | 71h |
 | T4 Lembrar | 42h |
-| T5 Cancelar | 37h |
+| T5 Cancelar | 52h |
 | T6 Configurar | 50h |
-| T7 Entregar | 32h |
-| **Total** | **~397h** |
+| T7 Acompanhar | 37h |
+| T8 Entregar | 32h |
+| **Total** | **~474h** |
 
-Escopo completo: ~27 semanas nominais, ~38 com 70% de eficiência real. Com os
-cortes do backlog (Fatia 6 exceto 6.4, botões inline, log e reagendamento), ~330h:
-~22 semanas nominais, ~32 realistas.
+Escopo completo: ~32 semanas nominais, ~46 com 70% de eficiência real. Com os
+cortes do backlog (Fatia 6 exceto 6.1, 6.4 e 6.5a, botões inline, `.ics` e
+financeiro por prestador), ~410h: ~28 semanas nominais, ~40 realistas. Cortar
+também o calendário semanal, o último recurso, leva a ~395h.
 
 **Revisar o prazo comunicado.** A v0.4 dizia "5 a 6 meses" com base em 357h. Com
-o backlog atual, mesmo o escopo cortado passa de 7 meses no ritmo realista — ou o
+o backlog atual, mesmo o escopo cortado passa de 9 meses no ritmo realista — ou o
 time sobe as horas semanais, ou corta mais, ou comunica outro prazo.
 
 Dois fatores que puxam para cima e não aparecem na conta: a curva de aprendizado
@@ -477,3 +571,13 @@ de Go (três pessoas ao mesmo tempo) e o fato de as Fatias 0 e 1 quase não
 paralelizarem. Nas primeiras ~8 semanas o time roda com uma ou duas pessoas
 produtivas no backend; o frontend base (1.7–1.9) é o que ocupa a terceira. A
 partir da Fatia 3 abrem três frentes.
+
+## 14. Fora do escopo
+
+O que o MVP não faz, de propósito. Decidido em 02/10/2026.
+
+| Tema | Por quê |
+|---|---|
+| Transferir a empresa, ou recuperá-la quando o criador sai ou perde a conta | O criador (`tenants.criado_por`) não é removível; trocar de dono pede fluxo próprio |
+| Feed (assinatura) de calendário `.ics` | Só download (RF17): o feed precisa de URL com token e expõe a agenda fora da sessão |
+| Papel `atendente` | Removido na v0.8: quem agenda é o owner ou o próprio prestador |
