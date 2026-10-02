@@ -77,8 +77,15 @@ Frontend:
 ```bash
 cd web
 npm install
-npm run dev
+npm run dev     # http://localhost:5173 (abre em /agendamentos)
+npm run lint    # o CI roda lint e build em todo PR
+npm run build   # tsc em modo strict + build do Vite
 ```
+
+As rotas ficam em `web/src/route.ts` (React Router); `App.tsx` é o layout com a
+navegação e o `<Outlet />` onde cada tela aparece. Em dev, o Vite repassa tudo que
+começa com `/api` para a API em `localhost:8080`, sem reescrever o caminho: a SPA chama
+`/api/agendamentos` na mesma origem e não precisa de CORS.
 
 ### 🗄️ Migrations
 
