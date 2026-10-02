@@ -2,7 +2,7 @@
 
 Plataforma multi-tenant de agendamentos com notificações automáticas via Telegram.
 
-Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários, serviços, horários e clientes, isolados das demais. O cliente final recebe confirmação e lembrete pelo Telegram, sem precisar de conta no sistema.
+Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários, serviços, horários e clientes, isolados das demais. São dois papéis: o **owner** administra (convida membros e remove prestadores, define serviços e preços, vê o financeiro de todos) e também pode atender; o **prestador** vê e opera só a própria agenda. O cliente final recebe confirmação e lembrete pelo Telegram, sem precisar de conta no sistema.
 
 > 🚧 Em desenvolvimento. Andamento no GitHub Projects (Smart Booking DevOps).
 
@@ -159,12 +159,13 @@ O backlog é dividido em fatias verticais: cada uma atravessa banco, API e front
 |---|---|
 | T0 — Fundação | Repositório, Docker, CI, migrations, RLS, seed com dois tenants |
 | T1 — Agendar | Criar e listar agendamentos no navegador (tenant fixo, sem login) |
-| T2 — Entrar | Signup, login, sessão e isolamento real entre tenants |
+| T2 — Entrar | Signup, login, sessão, isolamento real entre tenants, papéis owner/prestador e convites |
 | T3 — Avisar | Vincular cliente ao Telegram e enviar confirmação |
 | T4 — Lembrar | Lembrete automático X horas antes |
-| T5 — Cancelar | Cancelar e reagendar, inclusive pelo bot |
-| T6 — Configurar | Serviços, disponibilidades, slots livres e fuso por tenant |
-| T7 — Entregar | Deploy e documentação final |
+| T5 — Cancelar | Cancelar, reagendar e concluir, inclusive cancelar pelo bot; remover membro |
+| T6 — Configurar | Serviços com preço, disponibilidades, slots livres e fuso por tenant |
+| T7 — Acompanhar | Calendário semanal, resumo financeiro do mês e exportação para o calendário do celular (`.ics`) |
+| T8 — Entregar | Deploy e documentação final |
 
 Backlog detalhado em `docs/backlog.md`; cards já criados em `docs/cards.md`. Status de card, só no GitHub Projects.
 
@@ -187,6 +188,8 @@ Backlog detalhado em `docs/backlog.md`; cards já criados em `docs/cards.md`. St
 ## 🔐 Dados pessoais
 
 Projeto acadêmico. O sistema armazena nome, telefone e identificador de Telegram de clientes, com a finalidade única de operar agendamentos e enviar as notificações correspondentes.
+
+A exportação `.ics` é um download feito pelo prestador: o arquivo leva nome do cliente e horário de cada agendamento para o calendário do aparelho dele (e para o iCloud, se o calendário sincroniza). A finalidade é a mesma: o prestador consultar a própria agenda. O arquivo é uma fotografia; depois de baixado, o sistema não o atualiza nem o apaga.
 
 O `seed.sql` usa exclusivamente dados fictícios. Não versione nem carregue dados reais de terceiros neste repositório. Para demonstrações, use contatos do próprio grupo, com ciência dos envolvidos.
 
