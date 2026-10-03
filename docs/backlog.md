@@ -8,7 +8,7 @@ Complementa `docs/requisitos.md` e `docs/guia-banco-de-dados.md`.
 
 > **Mudanças da v2.1:** voltaram cinco itens das revisões de arquitetura de 16 e 17/09 que a v2.0 não trazia — Postgres no CI (0.17), teste de exclusão de tenant (0.18), migration `sessoes` (2.14), normalização de e-mail (2.15) e `secret_token` no webhook (3.15). A decisão de sessão (cookie `HttpOnly`) já estava tomada e deixou de aparecer como pendente. Cronograma recalculado.
 
-> **Mudanças da v2.2:** decisões de 02/10/2026 sobre papéis, agenda e financeiro (`requisitos.md` v0.8). Papéis owner e prestador com escopo por prestador (2.7, teste 2.16); convites na Fatia 2 (2.17–2.20); agendamento nunca é apagado — a 5.1 perde o `DELETE` e ganha concluir; remoção de membro (5.8); tela de clientes na 3.8; preço nos serviços (6.1, 6.5a); fatia nova **7 Acompanhar** (calendário semanal, financeiro e `.ics`), e Entregar passa a ser a Fatia 8. Corte de escopo e cronograma recalculados (~474h).
+> **Mudanças da v2.2:** decisões de 02/10/2026 sobre papéis, agenda e financeiro (`requisitos.md` v0.8). Papéis administrador e prestador com escopo por prestador (2.7, teste 2.16); convites na Fatia 2 (2.17–2.20); agendamento nunca é apagado — a 5.1 perde o `DELETE` e ganha concluir; remoção de membro (5.8); tela de clientes na 3.8; preço nos serviços (6.1, 6.5a); fatia nova **7 Acompanhar** (calendário semanal, financeiro e `.ics`), e Entregar passa a ser a Fatia 8. Corte de escopo e cronograma recalculados (~474h).
 
 ---
 
@@ -108,17 +108,17 @@ O carregamento de config da 0.4 passou para a 1.1.
 
 ## FATIA 2 — Entrar · ~81h · 🎯 multi-tenant real
 
-**Entrega:** dois usuários de tenants diferentes fazem login e cada um vê apenas a própria agenda; dentro da empresa, o prestador vê só os seus agendamentos, e o owner convida novos membros.
+**Entrega:** dois usuários de tenants diferentes fazem login e cada um vê apenas a própria agenda; dentro da empresa, o prestador vê só os seus agendamentos, e o administrador convida novos membros.
 
 | #    | Issue | Tam. |
 |------|-------|------|
 | 2.1  | `[T2] Hash de senha com Argon2id` | P |
-| 2.2  | `[T2] POST /signup: cria usuário + tenant (com criado_por) + membership owner na mesma transação` | M |
+| 2.2  | `[T2] POST /signup: cria usuário + tenant (com criado_por) + membership administrador na mesma transação` | M |
 | 2.3  | `[T2] POST /login com emissão de sessão` | M |
 | 2.4  | `[T2] POST /logout e invalidação` | P |
 | 2.5  | `[T2] Middleware de autenticação` | M |
 | 2.6  | `[T2] Middleware de tenant: valida membership e injeta app.tenant_id` | G |
-| 2.7  | `[T2] Middleware de autorização: papéis owner/prestador e Escopo por prestador` | M |
+| 2.7  | `[T2] Middleware de autorização: papéis administrador/prestador e Escopo por prestador` | M |
 | 2.8  | `[T2] Rate limit no endpoint de login` | P |
 | 2.9  | `[T2] GET /me com os tenants do usuário` | P |
 | 2.10 | `[T2] Telas de cadastro e login` | M |
@@ -128,18 +128,18 @@ O carregamento de config da 0.4 passou para a 1.1.
 | 2.14 | `[T2] Migration: sessoes` | P |
 | 2.15 | `[T2] Normalizar e-mail (trim + minúsculas) no cadastro e no login` | P |
 | 2.16 | `[T2] Teste: prestador não lê agendamento de outro prestador do mesmo tenant` | M |
-| 2.17 | `[T2] Migration: convites (papel owner ou prestador)` | P |
-| 2.18 | `[T2] POST e GET /convites: owner convida owner ou prestador` | M |
+| 2.17 | `[T2] Migration: convites (papel administrador ou prestador)` | P |
+| 2.18 | `[T2] POST e GET /convites: administrador convida administrador ou prestador` | M |
 | 2.19 | `[T2] Aceite do convite (endpoint e tela), reativando membership removido` | M |
 | 2.20 | `[T2] Tela de gestão de prestadores: listar membros e convidar` | M |
 
 **Sessão já decidida:** cookie `HttpOnly` + `Secure` + `SameSite=Lax` com a tabela `sessoes` (`requisitos.md` §9). Por isso a 2.14 vem antes da 2.3.
 
-**Papéis decididos (02/10/2026):** `owner` e `prestador`; o owner também pode atender. O escopo por prestador é filtro na query, sem policy extra no RLS. A 2.7 monta o `Escopo` (`guia-banco-de-dados.md` §Acesso a dados): para o prestador, sempre o da sessão (`prestador_id` de outro → 403 `sem_permissao`); para o owner, o do seletor ou nenhum. O handler nunca monta o filtro. Rota só de owner responde 403 ao prestador.
+**Papéis decididos (02/10/2026):** `administrador` e `prestador`; o administrador também pode atender. O escopo por prestador é filtro na query, sem policy extra no RLS. A 2.7 monta o `Escopo` (`guia-banco-de-dados.md` §Acesso a dados): para o prestador, sempre o da sessão (`prestador_id` de outro → 403 `sem_permissao`); para o administrador, o do seletor ou nenhum. O handler nunca monta o filtro. Rota só de administrador responde 403 ao prestador.
 
 > **2.16 é a 2.13 dentro da empresa.** A fixture cria os usuários via `/signup` e insere a 2ª membership direto no banco, pela conexão do dono das tabelas — sem depender do seed nem dos convites. Cobre a listagem: o prestador recebe só os próprios agendamentos, `prestador_id` de outro dá 403 e agendamento de outro tenant nunca aparece. PATCH, cancelar e concluir nascem na 5.1, que repete o critério (403 no mesmo tenant, 404 em outro).
 
-> **Convites (2.17–2.20).** Owner convida owner ou prestador. Convite para e-mail que já tem membership ativo, expirado ou já aceito → 409 `convite_invalido`; token inexistente → 404. O aceite exige sessão com o e-mail do convite e reativa membership removido (`guia-banco-de-dados.md` §011). A remoção de membro fica na 5.8, porque depende do cancelamento da 5.2.
+> **Convites (2.17–2.20).** Administrador convida administrador ou prestador. Convite para e-mail que já tem membership ativo, expirado ou já aceito → 409 `convite_invalido`; token inexistente → 404. O aceite exige sessão com o e-mail do convite e reativa membership removido (`guia-banco-de-dados.md` §011). A remoção de membro fica na 5.8, porque depende do cancelamento da 5.2.
 
 **Critério de conclusão:** 2.13 e 2.16 passam no CI. Sem esses testes verdes, o isolamento é suposição, não garantia — e as fatias seguintes vão construir por cima dele.
 
@@ -214,23 +214,23 @@ O carregamento de config da 0.4 passou para a 1.1.
 
 > **5.2 é a issue que evita o bug mais constrangedor possível:** o cliente recebe "seu agendamento foi cancelado" e, horas depois, "lembrete do seu agendamento".
 
-> **5.1, regras de cada operação.** Remarcar e trocar serviço só em `confirmado`; concluir só com `inicio <= now()` (relógio do banco); cancelar enquanto `confirmado`; `cancelado` e `concluido` são finais. Remarcar mantém valor e duração (`fim = novo inicio + (fim − inicio)`); trocar o serviço (só para serviço ativo) recalcula o `fim` e recopia o valor. Cada operação trava a linha e responde 404 (outro tenant), 403 `sem_permissao` (agendamento de outro prestador, para quem não é owner), 409 `status_invalido` (transição inválida) e 409 `conflito_horario` (o PATCH dispara a constraint de novo, SQLSTATE `23P01`). Não existe `DELETE`: o `app_user` nem tem o privilégio (`guia-banco-de-dados.md` §007, §009 e §Acesso a dados).
+> **5.1, regras de cada operação.** Remarcar e trocar serviço só em `confirmado`; concluir só com `inicio <= now()` (relógio do banco); cancelar enquanto `confirmado`; `cancelado` e `concluido` são finais. Remarcar mantém valor e duração (`fim = novo inicio + (fim − inicio)`); trocar o serviço (só para serviço ativo) recalcula o `fim` e recopia o valor. Cada operação trava a linha e responde 404 (outro tenant), 403 `sem_permissao` (agendamento de outro prestador, para quem não é administrador), 409 `status_invalido` (transição inválida) e 409 `conflito_horario` (o PATCH dispara a constraint de novo, SQLSTATE `23P01`). Não existe `DELETE`: o `app_user` nem tem o privilégio (`guia-banco-de-dados.md` §007, §009 e §Acesso a dados).
 
 > **5.4 inclui concluir.** Sem ele, nenhum agendamento chega a `concluido` e o financeiro (Fatia 7) fica sempre zerado.
 
 > **Botão Confirmar (5.5–5.7).** O agendamento já nasce `confirmado`: o Confirmar só registra a confirmação de presença e edita a mensagem (5.7), sem mudar status. Só o Cancelar muda o status, pelo caso de uso da 5.2. Decidido em 02/10/2026.
 
-> **5.8, remoção de membro.** Vale para qualquer membership, inclusive owner que atende. Na mesma transação: grava `removido_em` e cancela cada agendamento futuro do removido (`inicio > now()`) pelo caso de uso da 5.2 — descarta lembrete e confirmação pendentes e enfileira o aviso de cancelamento. Agendamentos passados ainda `confirmado` ficam para o owner concluir pela agenda. Ninguém remove o criador da empresa; só o criador remove outro owner; owner que não é o criador remove só prestadores — o resto dá 403 `sem_permissao`. O botão de remover fica na tela de gestão (2.20).
+> **5.8, remoção de membro.** Vale para qualquer membership, inclusive administrador que atende. Na mesma transação: grava `removido_em` e cancela cada agendamento futuro do removido (`inicio > now()`) pelo caso de uso da 5.2 — descarta lembrete e confirmação pendentes e enfileira o aviso de cancelamento. Agendamentos passados ainda `confirmado` ficam para o administrador concluir pela agenda. Ninguém remove o criador da empresa; só o criador remove outro administrador; administrador que não é o criador remove só prestadores — o resto dá 403 `sem_permissao`. O botão de remover fica na tela de gestão (2.20).
 
 ---
 
 ## FATIA 6 — Configurar · ~50h · 🎯 autonomia do prestador
 
-**Entrega:** o owner cadastra os serviços, com preço, e os horários de cada prestador (o prestador cadastra os próprios); o formulário passa a oferecer slots calculados em vez de campo de hora livre.
+**Entrega:** o administrador cadastra os serviços, com preço, e os horários de cada prestador (o prestador cadastra os próprios); o formulário passa a oferecer slots calculados em vez de campo de hora livre.
 
 | #    | Issue | Tam. |
 |------|-------|------|
-| 6.1  | `[T6] CRUD de servicos com preço (só owner)` | M |
+| 6.1  | `[T6] CRUD de servicos com preço (só administrador)` | M |
 | 6.2  | `[T6] CRUD de disponibilidades` | M |
 | 6.3  | `[T6] GET /horarios-livres com cálculo de slots` | G |
 | 6.4  | `[T6] Fuso horário por tenant e conversão na borda` | M |
@@ -244,31 +244,31 @@ O carregamento de config da 0.4 passou para a 1.1.
 
 > **6.4 é a exceção — não corte.** Fuso errado significa lembrete na hora errada, e isso invalida a Fatia 4 inteira.
 
-> **6.1 e 6.5a também ficam.** Sem preço, o financeiro (Fatia 7) não tem valor. Só o owner gerencia serviços e preços, e a API exige o preço (a coluna não tem `DEFAULT`). A 6.5 foi dividida em 6.5a (serviços e preços, protegida) e 6.5b (disponibilidades, cortável). Decidido em 02/10/2026.
+> **6.1 e 6.5a também ficam.** Sem preço, o financeiro (Fatia 7) não tem valor. Só o administrador gerencia serviços e preços, e a API exige o preço (a coluna não tem `DEFAULT`). A 6.5 foi dividida em 6.5a (serviços e preços, protegida) e 6.5b (disponibilidades, cortável). Decidido em 02/10/2026.
 
-> **Escopo e membership ativo.** O owner edita a disponibilidade de qualquer prestador, escolhendo-o como no seletor da agenda; o prestador, só a própria (decidido em 02/10/2026). A 6.3 só oferece slots de membership ativo (`JOIN memberships ... removido_em IS NULL`); as disponibilidades de quem foi removido ficam no banco. 6.3 e 6.8 seguem o `Escopo` da 2.7: prestador que pede `prestador_id` de outro recebe 403.
+> **Escopo e membership ativo.** O administrador edita a disponibilidade de qualquer prestador, escolhendo-o como no seletor da agenda; o prestador, só a própria (decidido em 02/10/2026). A 6.3 só oferece slots de membership ativo (`JOIN memberships ... removido_em IS NULL`); as disponibilidades de quem foi removido ficam no banco. 6.3 e 6.8 seguem o `Escopo` da 2.7: prestador que pede `prestador_id` de outro recebe 403.
 
 ---
 
 ## FATIA 7 — Acompanhar · ~37h · 🎯 agenda e financeiro
 
-**Entrega:** a agenda vira calendário semanal; owner e prestador veem o resumo financeiro do mês e exportam o período para o calendário do celular.
+**Entrega:** a agenda vira calendário semanal; administrador e prestador veem o resumo financeiro do mês e exportam o período para o calendário do celular.
 
 Depende da 5.4 (concluir) e da 6.1 (preço): sem os dois, o financeiro sai zerado.
 
 | #   | Issue | Tam. |
 |-----|-------|------|
 | 7.1 | `[T7] Calendário semanal: eixo de horas, navegação entre semanas e cor por status` | G |
-| 7.2 | `[T7] Seletor de prestador no calendário (owner), com removidos marcados` | M |
+| 7.2 | `[T7] Seletor de prestador no calendário (administrador), com removidos marcados` | M |
 | 7.3 | `[T7] GET /financeiro: resumo do mês no fuso do tenant (agendamentos concluídos)` | M |
-| 7.4 | `[T7] Financeiro por prestador para o owner, com removidos marcados` | M |
+| 7.4 | `[T7] Financeiro por prestador para o administrador, com removidos marcados` | M |
 | 7.5 | `[T7] Tela do resumo financeiro mensal` | M |
 | 7.6 | `[T7] Exportar .ics do período do calendário (download)` | M |
 | 7.7 | `[T7] Botão de exportar .ics no calendário` | P |
 
 **7.1 substitui a lista da 1.10**, que continua lista simples até lá, e consome a 1.6 com o período da semana.
 
-> **Período no fuso do tenant.** Semana e mês contam pelo `inicio`, no fuso do tenant (RNF01): limites calculados em Go e passados como `timestamptz` (`guia-banco-de-dados.md` §Acesso a dados). O resumo soma `valor_centavos` dos `concluido`: para o prestador, os próprios; para o owner, o total da empresa e, na 7.4, por prestador.
+> **Período no fuso do tenant.** Semana e mês contam pelo `inicio`, no fuso do tenant (RNF01): limites calculados em Go e passados como `timestamptz` (`guia-banco-de-dados.md` §Acesso a dados). O resumo soma `valor_centavos` dos `concluido`: para o prestador, os próprios; para o administrador, o total da empresa e, na 7.4, por prestador.
 
 > **`.ics` (7.6).** Download, não feed: é uma fotografia do período e não sincroniza. Mesmo escopo e mesmo período do calendário; só `confirmado` e `concluido` (cancelados ficam fora). `METHOD:PUBLISH`; por evento, `UID:<id>@smartbooking`, `DTSTAMP` = agora, `SEQUENCE` = epoch de `atualizado_em` (reimportar substitui o evento remarcado) e `DTSTART`/`DTEND` em UTC (`Z`). Rota na mesma origem, com o cookie da sessão; sem token na URL.
 
