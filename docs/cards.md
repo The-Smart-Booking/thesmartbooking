@@ -16,11 +16,11 @@ dependências não mudaram; mudou o corpo destes cards, já editado no board
 
 | Card | Item | O que mudou |
 |---|---|---|
-| #65 | 0.9 | `CHECK` de papel só com owner e prestador; `ALTER TABLE tenants ADD COLUMN criado_por` (a 002 não muda) |
+| #65 | 0.9 | `CHECK` de papel só com administrador e prestador; `ALTER TABLE tenants ADD COLUMN criado_por` (a 002 não muda) |
 | #67 | 0.11 | `servicos.preco_centavos` sem `DEFAULT`, com `CHECK >= 0` |
-| #68 | 0.12 | `valor_centavos` com `CHECK >= 0`; índice `idx_agendamentos_prestador_inicio`; owner como prestador |
+| #68 | 0.12 | `valor_centavos` com `CHECK >= 0`; índice `idx_agendamentos_prestador_inicio`; administrador como prestador |
 | #70 | 0.14 | `REVOKE DELETE ON agendamentos FROM app_user`; cinco tabelas fora do RLS; sem policy por prestador |
-| #72 | 0.16 | Ordem `usuarios` → `tenants` → `memberships`; no Alfa, owner criador que atende + 1 prestador; preços |
+| #72 | 0.16 | Ordem `usuarios` → `tenants` → `memberships`; no Alfa, administrador criador que atende + 1 prestador; preços |
 | #52 | 1.5 | Grava `valor_centavos` copiado do serviço; só prestador com membership ativo |
 | #53 | 1.6 | `prestador_id` opcional, sem regra de sessão (fica na 2.7) |
 | #57 | 1.10 | Continua lista simples; o calendário semanal é a 7.1 |

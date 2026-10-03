@@ -2,7 +2,7 @@
 
 Plataforma multi-tenant de agendamentos com notificações automáticas via Telegram.
 
-Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários, serviços, horários e clientes, isolados das demais. São dois papéis: o **owner** administra (convida membros e remove prestadores, define serviços e preços, vê o financeiro de todos) e também pode atender; o **prestador** vê e opera só a própria agenda. O cliente final recebe confirmação e lembrete pelo Telegram, sem precisar de conta no sistema.
+Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários, serviços, horários e clientes, isolados das demais. São dois papéis: o **administrador** gerencia a empresa (convida membros e remove prestadores, define serviços e preços, vê o financeiro de todos) e também pode atender; o **prestador** vê e opera só a própria agenda. O cliente final recebe confirmação e lembrete pelo Telegram, sem precisar de conta no sistema.
 
 > 🚧 Em desenvolvimento. Andamento no GitHub Projects (Smart Booking DevOps).
 
@@ -159,7 +159,7 @@ O backlog é dividido em fatias verticais: cada uma atravessa banco, API e front
 |---|---|
 | T0 — Fundação | Repositório, Docker, CI, migrations, RLS, seed com dois tenants |
 | T1 — Agendar | Criar e listar agendamentos no navegador (tenant fixo, sem login) |
-| T2 — Entrar | Signup, login, sessão, isolamento real entre tenants, papéis owner/prestador e convites |
+| T2 — Entrar | Signup, login, sessão, isolamento real entre tenants, papéis administrador/prestador e convites |
 | T3 — Avisar | Vincular cliente ao Telegram e enviar confirmação |
 | T4 — Lembrar | Lembrete automático X horas antes |
 | T5 — Cancelar | Cancelar, reagendar e concluir, inclusive cancelar pelo bot; remover membro |

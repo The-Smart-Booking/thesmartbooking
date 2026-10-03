@@ -38,7 +38,7 @@ que o introduz.
 | Status | `codigo`           | Quando | Entra em |
 |--------|--------------------|--------|----------|
 | 401    | `nao_autenticado`  | Sem sessão válida: cookie ausente, expirado ou revogado. | 2.5 |
-| 403    | `sem_permissao`    | Agendamento de outro prestador do mesmo tenant; `prestador_id` de outro pedido por um prestador; rota só de owner; remover o criador da empresa; owner que não é o criador removendo owner. | 2.7 (remoções: 5.8) |
+| 403    | `sem_permissao`    | Agendamento de outro prestador do mesmo tenant; `prestador_id` de outro pedido por um prestador; rota só de administrador; remover o criador da empresa; administrador que não é o criador removendo administrador. | 2.7 (remoções: 5.8) |
 | 409    | `status_invalido`  | Transição de status inválida: concluir antes do início; cancelar, remarcar ou trocar o serviço de agendamento cancelado ou concluído. | 5.1 |
 | 409    | `convite_invalido` | Convite expirado ou já aceito, ou para e-mail que já tem membership ativo no tenant. | 2.18, 2.19 |
 
@@ -46,7 +46,7 @@ que o introduz.
 (5.1), que dispara a constraint de sobreposição de novo.
 
 Agendamento de **outro tenant** continua `404 nao_encontrado` (o RLS nem deixa
-ver); de outro prestador do **mesmo** tenant, para quem não é owner,
+ver); de outro prestador do **mesmo** tenant, para quem não é administrador,
 `403 sem_permissao`. Token de convite inexistente também é 404.
 
 ## Cliente HTTP (1.9)

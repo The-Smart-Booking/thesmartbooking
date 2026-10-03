@@ -2,14 +2,21 @@
 
 Fatia 0 do backlog (itens 0.7 a 0.18) e base de acesso a dados da Fatia 1 (1.2 e
 1.3). Complementa `docs/requisitos.md`.
-Versão **1.4** · 02/10/2026
+Versão **1.5** · 03/10/2026
+
+## Mudanças desde a v1.4
+
+Decisão de 03/10/2026 (`requisitos.md` v0.9): nomenclatura padronizada em português.
+
+- Papel `owner` renomeado para `administrador`: o `CHECK` de papel em `memberships` e
+  `convites` aceita `administrador` e `prestador` (os nomes das constraints não mudam).
 
 ## Mudanças desde a v1.3
 
 Decisões de 02/10/2026 (`requisitos.md` v0.8). Nenhuma migration nova é escrita
 agora: o guia descreve o que as 003, 005, 007, 009 e 011 vão conter.
 
-- `CHECK` de papel só com `owner` e `prestador`, em `memberships` e `convites`.
+- `CHECK` de papel só com `administrador` e `prestador`, em `memberships` e `convites`.
 - `tenants.criado_por` entra por `ALTER TABLE` na 003: a 002 já foi mergeada.
 - Dinheiro em centavos (§Dinheiro): `servicos.preco_centavos` sem `DEFAULT` e
   `agendamentos.valor_centavos`, os dois com `CHECK >= 0`.
@@ -206,7 +213,7 @@ CREATE TABLE memberships (
   papel       text NOT NULL,
   removido_em timestamptz,
   criado_em   timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT papel_valido CHECK (papel IN ('owner', 'prestador')),
+  CONSTRAINT papel_valido CHECK (papel IN ('administrador', 'prestador')),
   CONSTRAINT membership_unico UNIQUE (usuario_id, tenant_id)
 );
 
@@ -229,17 +236,17 @@ migration que já rodou não se edita), e `usuarios` só existe a partir desta. 
 `CASCADE`: com `CASCADE`, apagar a conta do criador apagaria a empresa. Aponta
 para `usuarios`, não para `memberships`, para não criar ciclo entre `tenants` e
 `memberships`. O signup (2.2) grava, na mesma transação, `usuarios` → `tenants`
-(com `criado_por`) → `memberships` (owner) — sem ciclo, porque `usuarios` não tem
-`tenant_id`. Proteger o criador (ninguém o remove; só ele remove outro owner) é
+(com `criado_por`) → `memberships` (administrador) — sem ciclo, porque `usuarios` não tem
+`tenant_id`. Proteger o criador (ninguém o remove; só ele remove outro administrador) é
 regra do endpoint de remoção (5.8), com teste, sem trigger. Sem índice: a coluna
 não é filtro de consulta.
 
 ⚠️ **Banco de dev com linhas em `tenants`:** o `ADD COLUMN ... NOT NULL` falha. Ao
 atualizar, rode `goose down-to 0` (ou `docker compose down -v`) antes do `goose up`.
 
-**Dois papéis: `owner` e `prestador`.** O owner administra a empresa e também pode
+**Dois papéis: `administrador` e `prestador`.** O administrador gerencia a empresa e também pode
 atender: a FK de `agendamentos.prestador_id` aponta para `memberships`, não para o
-papel, então um owner é prestador de agendamento sem mudança no schema. O que cada
+papel, então um administrador é prestador de agendamento sem mudança no schema. O que cada
 papel pode fazer é regra da API (`requisitos.md` §9).
 
 **Unicidade por `lower(email)`, não por `email`.** `UNIQUE` direto na coluna deixa
@@ -259,8 +266,8 @@ da equipe" — só erro de chave estrangeira.
 Quem exige membership ativo (`removido_em IS NULL`): a sessão, revalidada a cada
 requisição (remover corta o acesso na hora); criar agendamento ou disponibilidade;
 e o cálculo de slots (6.3), via `JOIN memberships ... removido_em IS NULL`. Quem
-**não** filtra: o seletor de prestador do owner e o financeiro por prestador, que
-mostram os removidos marcados "(removido)" — o owner ainda conclui os
+**não** filtra: o seletor de prestador do administrador e o financeiro por prestador, que
+mostram os removidos marcados "(removido)" — o administrador ainda conclui os
 agendamentos passados de quem saiu. As disponibilidades do removido ficam no banco
 (o `CASCADE` da 006 só vale para `DELETE` físico), e a remoção cancela em lote os
 agendamentos futuros dele (5.8).
@@ -364,7 +371,7 @@ que apontam para ele. A listagem no frontend filtra `ativo = true`.
 
 `preco_centavos` segue §Dinheiro. **Sem `DEFAULT`** de propósito: com `DEFAULT 0`,
 serviço cadastrado sem preço ficaria grátis em silêncio e o financeiro sairia
-zerado sem ninguém notar. Só o owner gerencia serviços e preços (6.1).
+zerado sem ninguém notar. Só o administrador gerencia serviços e preços (6.1).
 
 `agendamentos.fim` é gravado, não derivado de `duracao_minutos`: a duração do
 serviço pode mudar, e o agendamento antigo tem que continuar contando a história
@@ -474,7 +481,7 @@ só o banco resolve isso.
   por um agendamento cancelado.
 - A constraint vale por **prestador**, não por cliente: o mesmo cliente pode, em
   tese, ter dois agendamentos simultâneos com prestadores diferentes. Se isso não
-  for desejado, é uma segunda constraint — decidam explicitamente. O owner que
+  for desejado, é uma segunda constraint — decidam explicitamente. O administrador que
   atende entra na mesma regra, sem mudança: é um `prestador_id` como outro qualquer.
 - Violação chega no Go como `SQLSTATE 23P01` (`exclusion_violation`) e precisa
   virar **HTTP 409**, não 500 — no `POST` (1.5) e no `PATCH` que remarca ou troca
@@ -720,7 +727,7 @@ CREATE TABLE convites (
   aceito_em  timestamptz,
   criado_por uuid NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
   criado_em  timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT convite_papel_valido CHECK (papel IN ('owner','prestador')),
+  CONSTRAINT convite_papel_valido CHECK (papel IN ('administrador','prestador')),
   CONSTRAINT convite_token_unico  UNIQUE (token)
 );
 
@@ -735,7 +742,7 @@ prioridade alta e entra na Fatia 2 (2.17 a 2.20); a remoção de membro, na 5.8.
 tabela está no desenho desde a v1.1 para ninguém inventar convite por e-mail sem
 registro.
 
-- **Papel do convite: `owner` ou `prestador`.** Owner convida owner; o criador da
+- **Papel do convite: `administrador` ou `prestador`.** Administrador convida administrador; o criador da
   empresa (`tenants.criado_por`) fica protegido pela regra do endpoint de remoção,
   não pelo banco.
 - **Aceite reativa membership removido.** Quem já saiu tem membership com
@@ -789,7 +796,7 @@ UUIDs fixos e legíveis no seed facilitam depuração. Em produção nunca, no s
 sempre.
 
 Os usuários `aaaa…` e `bbbb…` entram antes, e cada um ganha depois a membership
-`owner` do tenant que criou. No Alfa, o owner criador também atende (tem
+`administrador` do tenant que criou. No Alfa, o administrador criador também atende (tem
 agendamentos como `prestador_id`) e há mais um usuário com papel `prestador`, para
 demonstrar o escopo por prestador. Todo serviço tem `preco_centavos`, e todo
 agendamento, `valor_centavos` igual ao preço do seu serviço.
@@ -972,13 +979,13 @@ o handler nunca monta esse filtro: recebe um `Escopo` pronto do middleware da 2.
 // Escopo é construído só pelo middleware da 2.7, a partir da sessão.
 type Escopo struct {
     TenantID    uuid.UUID
-    PrestadorID *uuid.UUID // prestador: sempre o da sessão; owner: o do seletor ou nil
+    PrestadorID *uuid.UUID // prestador: sempre o da sessão; administrador: o do seletor ou nil
 }
 ```
 
 - Papel `prestador`: `PrestadorID` é sempre o usuário da sessão; `prestador_id` de
   outro na query string → 403 `sem_permissao`.
-- Papel `owner`: `PrestadorID` vem do seletor (query string) ou fica `nil` (a
+- Papel `administrador`: `PrestadorID` vem do seletor (query string) ou fica `nil` (a
   empresa toda).
 - Vale para agendamentos, slots (6.3), log de notificações (6.8), reenvio (RF13),
   financeiro e `.ics`.
@@ -1003,7 +1010,7 @@ FOR UPDATE;
 ```
 
 1. Sem linha → 404 `nao_encontrado` (outro tenant cai aqui, pelo RLS).
-2. `prestador_id` diferente do usuário da sessão e papel diferente de owner → 403
+2. `prestador_id` diferente do usuário da sessão e papel diferente de administrador → 403
    `sem_permissao`.
 3. Status que não permite a transição → 409 `status_invalido`.
 4. Só então o `UPDATE`, na mesma transação.
@@ -1026,7 +1033,7 @@ zero linhas atualizadas → 409 `status_invalido` (o horário ainda não começo
 - [ ] `DELETE FROM tenants` roda sem erro de chave estrangeira *(novo)*
 - [ ] Cadastrar `Davi@x.com` e `davi@x.com` falha na segunda vez *(novo)*
 - [ ] Toda FK usada em filtro tem índice explícito *(novo)*
-- [ ] `INSERT` em `memberships` ou `convites` com papel que não seja `owner` nem
+- [ ] `INSERT` em `memberships` ou `convites` com papel que não seja `administrador` nem
       `prestador` falha *(v1.4)*
 - [ ] Preço ou valor negativo falha (`servicos.preco_centavos`,
       `agendamentos.valor_centavos`); serviço sem preço falha *(v1.4)*
