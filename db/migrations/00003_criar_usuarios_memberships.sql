@@ -27,7 +27,7 @@ CREATE TABLE memberships (
   -- Exclusão lógica: agendamentos referencia memberships com RESTRICT (007).
   removido_em timestamptz,
   criado_em   timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT papel_valido CHECK (papel IN ('owner', 'prestador')),
+  CONSTRAINT papel_valido CHECK (papel IN ('administrador', 'prestador')),
   -- Impede membership duplicado e é alvo da FK composta de agendamentos (007).
   CONSTRAINT membership_unico UNIQUE (usuario_id, tenant_id)
 );
