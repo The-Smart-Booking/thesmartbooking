@@ -77,12 +77,15 @@ O isolamento entre organizações é garantido no banco, com Row Level Security,
 
 - [Docker](https://docs.docker.com/get-docker/) com Compose
 - [Go](https://go.dev/dl/) 1.27+
-- [Node.js](https://nodejs.org/) — para o `web/`
+- [Node.js](https://nodejs.org/) 22+ — para o `web/`
 - [goose](https://github.com/pressly/goose) v3.28.0
+- [sqlc](https://sqlc.dev/) v1.31.1
+- `psql` (cliente do PostgreSQL) — para o seed e a verificação de isolamento
 
 ```bash
 go install github.com/pressly/goose/v3/cmd/goose@v3.28.0
-# instala em ~/go/bin, que precisa estar no PATH
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+# instalam em ~/go/bin, que precisa estar no PATH
 ```
 
 ### Clonando
@@ -102,6 +105,8 @@ cp .env.example .env
 
 | Variável | Para quê |
 | --- | --- |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Criam o banco e o **dono das tabelas** no container do `compose.yml` |
+| `APP_USER_PASSWORD` | Senha do `app_user`, criado por `db/init/app_user.sh`; a mesma da `DATABASE_URL` |
 | `GOOSE_DBSTRING` | Conexão do **dono das tabelas** — migrations e seed. Ignora o RLS. |
 | `DATABASE_URL` | Conexão do **`app_user`** — a única que a API usa. Sujeita ao RLS. |
 | `GOOSE_DRIVER`, `GOOSE_MIGRATION_DIR` | Lidas pelo goose automaticamente |
@@ -112,10 +117,13 @@ cp .env.example .env
 
 ```bash
 docker compose up -d      # PostgreSQL em localhost:5467, Adminer em localhost:8088
+goose up                  # aplica as migrations
 
 go run ./cmd/api          # deve imprimir "Hello World"
 go test ./...
 ```
+
+> ⚠️ O `db/init/app_user.sh` só roda com o volume do banco vazio. Se o seu volume é anterior ao `db/init`, rode `docker compose down -v` uma vez antes do `up` — isso **apaga os dados locais** do banco.
 
 ### Frontend
 
@@ -145,7 +153,7 @@ O goose lê `GOOSE_DRIVER`, `GOOSE_DBSTRING` e `GOOSE_MIGRATION_DIR` do `.env` s
 | `goose up` | Aplica todas as pendentes |
 | `goose down` | Desfaz só a última |
 | `goose down-to 0` | Desfaz todas |
-| `goose -s create nome sql` | Nova migration `0000N_nome.sql` (`-s` = numeração sequencial) |
+| `goose -s create nome sql` | Nova migration com o próximo número sequencial (ex.: `00010_nome.sql`; `-s` = numeração sequencial) |
 
 Toda migration tem `Up` e `Down`, e os dois são testados: `goose up`, `goose down-to 0`, `goose up`.
 
@@ -190,7 +198,9 @@ thesmartbooking/
 │   └── pull_request_template.md
 ├── cmd/api/                    # entrada da API
 ├── internal/api/               # handlers e formato de erro (docs/erros-api.md)
+├── internal/storage/           # isolamento_test.go: teste de isolamento entre tenants (RLS)
 ├── db/migrations/              # goose, SQL puro
+├── db/init/                    # app_user.sh: cria o app_user no primeiro up do compose
 ├── web/                        # frontend React + Vite
 ├── docs/
 ├── compose.yml                 # PostgreSQL 16 + Adminer
@@ -204,7 +214,7 @@ Estrutura-alvo — cada pasta nasce no card que a usa:
 ```
 cmd/worker/            # consumidor da fila de notificações (T3)
 internal/config/       # leitura das variáveis de ambiente (T1)
-internal/storage/      # repositórios — toda função recebe tenantID (T1)
+internal/storage/      # repositórios — toda função recebe tenantID (já existe; repositórios na T1)
 internal/storage/db/   # código gerado pelo sqlc — não editar à mão (T1)
 internal/notificador/  # interface Notificador + implementação Telegram (T3)
 db/queries/            # queries SQL anotadas para o sqlc (T1)
@@ -221,19 +231,21 @@ Os endpoints nascem na fatia T1 e são documentados conforme entram. O que já e
 ```json
 {
   "erro": {
-    "codigo": "horario_indisponivel",
-    "mensagem": "Já existe agendamento nesse horário para este prestador.",
-    "campos": { "inicio": "conflita com agendamento existente" }
+    "codigo": "conflito_horario",
+    "mensagem": "Já existe um agendamento nesse horário.",
+    "detalhes": { "prestador_id": "5f0c2a9e-3b7d-4c1e-9a8f-2d6b1e7c4a90" }
   }
 }
 ```
 
 | Código | HTTP | Quando |
 | --- | --- | --- |
-| `validacao` | 400 | Campo faltando ou malformado |
+| `requisicao_invalida` | 400 | JSON malformado, campo obrigatório ausente, valor inválido |
 | `nao_encontrado` | 404 | ID inexistente — ou de outro tenant |
-| `horario_indisponivel` | 409 | Violação da constraint de sobreposição (`23P01`) |
+| `conflito_horario` | 409 | Agendamento sobrepõe outro (SQLSTATE `23P01`) |
 | `erro_interno` | 500 | Qualquer coisa não prevista |
+
+Os códigos previstos para fatias seguintes (401, 403 e outros 409) estão listados em [`docs/erros-api.md`](docs/erros-api.md).
 
 Nenhum erro de banco vaza para a resposta: nome de constraint, coluna e tabela ficam no log. Registro de outro tenant retorna 404 e não 403, para não confirmar que o ID existe.
 
@@ -333,11 +345,11 @@ Projeto acadêmico — Análise e Desenvolvimento de Sistemas, FAESA.
 
 O fluxo completo está em [`CONTRIBUTING.md`](CONTRIBUTING.md). Em resumo:
 
-1. Pegue um card no GitHub Projects e se atribua a ele
-2. `git checkout -b <tipo>/t<fatia>-<descrição>` a partir da `main`
+1. Pegue um card em **Ready** no GitHub Projects, atribua a você e mova para **In progress**
+2. `git switch -c <tipo>/t<fatia>-<descrição>` a partir da `main`
 3. Commits no padrão `<tipo> - <descrição>`
-4. Abra o PR com `Closes #N` na descrição
-5. Aguarde aprovação de outro integrante e CI verde
+4. Abra o PR com `Closes #N` na descrição e mova o card para **In review**
+5. Com aprovação de outro integrante e CI verde, faça **squash merge** e mova o card para **Done**
 
-Nenhum item entra em "Feito" sem estar mergeado na `main`, com PR aprovado, CI verde e critérios de aceite verificados.
+Nenhum item entra em **Done** sem estar mergeado na `main`, com PR aprovado, CI verde e critérios de aceite verificados.
 
