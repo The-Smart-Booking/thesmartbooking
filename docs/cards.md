@@ -25,12 +25,6 @@ dependências não mudaram; mudou o corpo destes cards, já editado no board
 | #53 | 1.6 | `prestador_id` opcional, sem regra de sessão (fica na 2.7) |
 | #57 | 1.10 | Continua lista simples; o calendário semanal é a 7.1 |
 
-Ainda falta ajustar no board:
-
-| Card | Item | O que muda |
-|---|---|---|
-| #73 | 0.17 | Rodar o script do `app_user` (0.15) antes do `goose up`: a 009 faz `REVOKE` para o `app_user` |
-
 Itens novos do backlog, sem card ainda: 2.16 a 2.20, 5.8, 6.5a e 6.5b (a 6.5 foi
 dividida) e 7.1 a 7.7 (Fatia 7 Acompanhar). Entregar passou a ser a Fatia 8 (8.1
 a 8.7).
