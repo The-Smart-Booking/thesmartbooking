@@ -30,7 +30,7 @@ Cada organização (barbearia, clínica, estúdio) tem seus próprios usuários,
   - [Frontend](#frontend)
 - [🗄️ Banco de dados](#️-banco-de-dados)
   - [Migrations](#migrations)
-  - [Seed e isolamento](#seed-e-isolamento-a-partir-da-fatia-0)
+  - [Seed e verificação de isolamento](#seed-e-verificação-de-isolamento)
 - [📁 Estrutura](#-estrutura)
 - [📍 API](#-api)
 - [📐 Convenções](#-convenções)
@@ -149,9 +149,7 @@ O goose lê `GOOSE_DRIVER`, `GOOSE_DBSTRING` e `GOOSE_MIGRATION_DIR` do `.env` s
 
 Toda migration tem `Up` e `Down`, e os dois são testados: `goose up`, `goose down-to 0`, `goose up`.
 
-### Seed e isolamento (a partir da Fatia 0)
-
-sqlc na versão fixada em `docs/guia-banco-de-dados.md`.
+### Seed e verificação de isolamento
 
 ```bash
 sqlc generate                 # a partir da T1: regenera internal/storage/db
