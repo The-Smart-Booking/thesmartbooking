@@ -7,10 +7,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD}
     ports:
       - "5467:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Só roda com volume vazio: banco antigo precisa de `docker compose down -v` uma vez.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
 
   adminer:
     image: adminer

@@ -1,0 +1,2 @@
+# Scripts rodam no container Linux: com CRLF (autocrlf no Windows) o sh quebra.
+*.sh text eol=lf
