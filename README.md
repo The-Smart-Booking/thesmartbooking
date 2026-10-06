@@ -105,15 +105,13 @@ goose -s create nome sql      # nova migration: 0000N_nome.sql (-s = numeração
 
 Toda migration tem `Up` e `Down`, e os dois são testados: `goose up`, `goose down-to 0`, `goose up`.
 
-### Seed e isolamento (a partir da Fatia 0)
-
-sqlc na versão fixada em `docs/guia-banco-de-dados.md`.
+### Seed e verificação de isolamento
 
 ```bash
 sqlc generate                 # a partir da T1: regenera internal/storage/db
 set -a; source .env; set +a   # exporta as variáveis para o psql
 goose up                      # o seed exige o banco migrado
-psql "$GOOSE_DBSTRING" -f db/seed.sql
+psql "$GOOSE_DBSTRING" -f db/seed.sql   # como dono das tabelas: ignora o RLS
 
 # sem psql instalado, pelo container do compose:
 docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/seed.sql
@@ -122,8 +120,6 @@ docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < d
 O seed roda numa transação só e para no primeiro erro. Pode rodar de novo: o que já
 existe (mesmo `id`) é pulado. No CI, com o Postgres do workflow (0.17), o passo é o
 mesmo, depois do `goose up`: `psql "$GOOSE_DBSTRING" -f db/seed.sql`.
-
-Duas conexões, de propósito: `GOOSE_DBSTRING` é o dono das tabelas (migrations e seed) e ignora o RLS; `DATABASE_URL` é o `app_user`, o único usuário que a API usa.
 
 O seed cria dois tenants fictícios (`alfa` e `beta`). São dois de propósito: com um só não é possível testar isolamento entre tenants. UUIDs fixos usados no config da T1 (1.1):
 
@@ -137,7 +133,7 @@ O administrador do Alfa é `aaaaaaaa-…` e o da Beta, `bbbbbbbb-…`; o padrão
 UUIDs está no cabeçalho de `db/seed.sql`. Os usuários do seed não fazem login: o
 `senha_hash` é falso.
 
-Conectado como `app_user` (`psql "$DATABASE_URL"`, nunca como o dono das tabelas):
+Conectado como `app_user` (`psql "$DATABASE_URL"`, **nunca** como o dono das tabelas):
 
 ```sql
 BEGIN;
@@ -151,7 +147,7 @@ WHERE tenant_id = '22222222-2222-2222-2222-222222222222';
 ROLLBACK;
 ```
 
-⚠️ Se o segundo `SELECT` retornar alguma linha, o Row Level Security não está ativo. Ver `docs/guia-banco-de-dados.md`.
+> ⚠️ Se o segundo `SELECT` retornar alguma linha, o Row Level Security não está ativo. Ver [`docs/guia-banco-de-dados.md`](docs/guia-banco-de-dados.md).
 
 ---
 
