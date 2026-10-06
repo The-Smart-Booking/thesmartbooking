@@ -213,8 +213,9 @@ thesmartbooking/
 │   └── pull_request_template.md
 ├── cmd/api/                    # entrada da API
 ├── internal/api/               # handlers e formato de erro (docs/erros-api.md)
-├── internal/storage/           # isolamento_test.go: teste de isolamento entre tenants (RLS)
+├── internal/storage/           # isolamento_test.go e exclusao_tenant_test.go: isolamento entre tenants (RLS) e exclusão de tenant
 ├── db/migrations/              # goose, SQL puro
+├── db/seed.sql                 # dois tenants fictícios (alfa e beta)
 ├── db/init/                    # app_user.sh: cria o app_user no primeiro up do compose
 ├── web/                        # frontend React + Vite
 ├── docs/
@@ -234,7 +235,6 @@ internal/storage/db/   # código gerado pelo sqlc — não editar à mão (T1)
 internal/notificador/  # interface Notificador + implementação Telegram (T3)
 db/queries/            # queries SQL anotadas para o sqlc (T1)
 sqlc.yaml              # configuração do sqlc (T1)
-db/seed.sql            # dois tenants fictícios (T0)
 ```
 
 ---
