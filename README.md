@@ -329,7 +329,7 @@ O `seed.sql` usa exclusivamente dados fictícios. Não versione nem carregue dad
 
 ## 🤝 Equipe
 
-Projeto acadêmico — Análise e Desenvolvimento de Sistemas, FAESA.
+Projeto acadêmico
 
 <table>
   <tr>
