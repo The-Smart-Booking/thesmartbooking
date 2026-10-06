@@ -2,7 +2,26 @@
 
 Fatia 0 do backlog (itens 0.7 a 0.18) e base de acesso a dados da Fatia 1 (1.2 e
 1.3). Complementa `docs/requisitos.md`.
-Versão **1.5** · 03/10/2026
+Versão **1.6** · 06/10/2026
+
+## Mudanças desde a v1.5
+
+Correções achadas ao escrever e testar as migrations 007, 008 e 009 (cards 0.12 a 0.14).
+Nenhuma decisão muda: dois `Down` que não revertiam tudo e um `GRANT` que sumia.
+
+- **007:** o `Down` só apagava a tabela e deixava `app.tocar_atualizado_em()` para trás.
+  Consequência, reproduzida: o `Down` da 001 falha (`DROP SCHEMA app`, `2BP01`) e um
+  `goose up` depois de desfazer a 007 falha (`function already exists`, `42723`). O `Down`
+  agora apaga a função também.
+- **009:** `DISABLE ROW LEVEL SECURITY` não desfaz o `FORCE` (são duas flags em
+  `pg_class`). O `Down` agora faz `NO FORCE` antes do `DISABLE`, e o bloco traz as
+  cinco tabelas por extenso em vez de "repetir o bloco acima".
+- **009:** `GRANT USAGE ON SCHEMA app TO app_user` também na migration. O `Down` da
+  001 apaga o schema `app` e o `Up` o recria sem o `GRANT` do script da 0.15: depois
+  de um `goose down-to 0` (que a 003 manda rodar em banco de dev), o `app_user`
+  perdia o acesso a `app.*` (`42501`). Achado pelo teste de isolamento.
+- **Teste de isolamento:** está em `internal/storage/isolamento_test.go` e pula sem
+  `GOOSE_DBSTRING` e `DATABASE_URL`; como rodar em §Seed e teste de isolamento.
 
 ## Mudanças desde a v1.4
 
@@ -457,6 +476,7 @@ CREATE INDEX idx_agendamentos_prestador_inicio ON agendamentos (tenant_id, prest
 
 -- +goose Down
 DROP TABLE agendamentos;
+DROP FUNCTION app.tocar_atualizado_em();   -- a função do trigger, abaixo
 ```
 
 Esta é a tabela central e concentra os três mecanismos que sustentam o resto.
@@ -530,6 +550,10 @@ CREATE TRIGGER trg_agendamentos_atualizado_em
 BEFORE UPDATE ON agendamentos
 FOR EACH ROW EXECUTE FUNCTION app.tocar_atualizado_em();
 ```
+
+⚠️ **O `Down` apaga a função também (v1.6).** `DROP TABLE` leva o trigger, mas não a
+função, que mora no schema `app`. Sobrando a função, o `Down` da 001 não consegue
+apagar o schema (`2BP01`) e subir a 007 de novo falha com `42723` (função já existe).
 
 ## 008 — notificacoes (outbox)
 
@@ -608,19 +632,25 @@ CREATE POLICY isolamento_tenant ON clientes
   FOR ALL
   USING      (tenant_id = app.current_tenant_id())
   WITH CHECK (tenant_id = app.current_tenant_id());
--- repetir o bloco acima para servicos, disponibilidades,
--- agendamentos e notificacoes
+-- o mesmo bloco para servicos, disponibilidades, agendamentos e notificacoes
+-- (na migration, as cinco por extenso)
 
 -- agendamento nunca é apagado: só cancelado ou concluído
 REVOKE DELETE ON agendamentos FROM app_user;
 
+-- o Down da 001 apaga o schema app e leva o GRANT do script da 0.15 (v1.6)
+GRANT USAGE ON SCHEMA app TO app_user;
+
 -- +goose Down
 GRANT DELETE ON agendamentos TO app_user;
-DROP POLICY isolamento_tenant ON clientes;
--- ... demais tabelas
-ALTER TABLE clientes DISABLE ROW LEVEL SECURITY;
--- ... demais tabelas
+DROP POLICY isolamento_tenant ON clientes;          -- e nas outras quatro
+ALTER TABLE clientes NO FORCE ROW LEVEL SECURITY;   -- e nas outras quatro
+ALTER TABLE clientes DISABLE ROW LEVEL SECURITY;    -- e nas outras quatro
 ```
+
+⚠️ **`DISABLE` não desfaz o `FORCE` (v1.6).** São duas flags (`relrowsecurity` e
+`relforcerowsecurity` em `pg_class`). Sem o `NO FORCE`, o `Down` deixa a tabela
+marcada como `FORCE` e o banco não volta ao estado da 008.
 
 **`REVOKE DELETE` aqui, não na 007.** O `ALTER DEFAULT PRIVILEGES` do script da
 0.15 (§Usuário de aplicação) concede `DELETE` no instante em que a tabela nasce,
@@ -827,7 +857,19 @@ ROLLBACK;
 Rode conectado como `app_user`. Se o segundo `SELECT` retornar linha ou o `INSERT`
 passar, o RLS não está ativo — provavelmente por uma das três armadilhas.
 
-Transforme isso em teste Go e coloque no CI. **Isso exige Postgres no CI**
+O teste Go está em `internal/storage/isolamento_test.go` (0.14). Ele grava os
+próprios dados como dono (`GOOSE_DBSTRING`), com UUIDs fora da faixa do seed, lê como
+`app_user` (`DATABASE_URL`) e apaga tudo no fim. Confere também que `DATABASE_URL` não
+é superusuário, não tem `BYPASSRLS` e não é dona de tabela (armadilha 1), e que
+`DELETE FROM agendamentos` falha com `42501`. Sem as duas variáveis, o teste pula:
+
+```bash
+set -a; . ./.env; set +a     # GOOSE_DBSTRING e DATABASE_URL
+goose up
+go test ./internal/storage/ -run Isolamento -v
+```
+
+Ele precisa rodar no CI. **Isso exige Postgres no CI**
 (`services: postgres` no workflow, item 0.17): o job atual roda só `go build/vet/test` e não
 tem banco. Teste de isolamento que só existe como comando manual deixa de ser
 executado na terceira semana.
