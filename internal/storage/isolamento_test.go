@@ -12,7 +12,7 @@ import (
 
 // Teste de isolamento da 0.14 (guia §Seed e teste de isolamento). Os dados são
 // gravados pelo dono das tabelas (GOOSE_DBSTRING) e lidos pelo app_user
-// (DATABASE_URL), como a API faz. Sem as duas variáveis, pula: no CI elas vêm da 0.17.
+// (DATABASE_URL), como a API faz. Sem as duas variáveis, pula; no CI (CI definida), falha.
 
 // UUIDs próprios do teste, fora da faixa do seed (0.16), para os dois conviverem.
 const (
@@ -28,6 +28,9 @@ func conectar(t *testing.T, variavel string) *pgx.Conn {
 	t.Helper()
 	url := os.Getenv(variavel)
 	if url == "" {
+		if os.Getenv("CI") != "" {
+			t.Fatalf("%s não definida no CI: teste de banco não pode pular", variavel)
+		}
 		t.Skipf("%s não definida: teste de banco pulado", variavel)
 	}
 	conn, err := pgx.Connect(context.Background(), url)
