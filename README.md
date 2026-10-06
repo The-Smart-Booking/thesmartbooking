@@ -112,12 +112,30 @@ sqlc na versão fixada em `docs/guia-banco-de-dados.md`.
 ```bash
 sqlc generate                 # a partir da T1: regenera internal/storage/db
 set -a; source .env; set +a   # exporta as variáveis para o psql
+goose up                      # o seed exige o banco migrado
 psql "$GOOSE_DBSTRING" -f db/seed.sql
+
+# sem psql instalado, pelo container do compose:
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/seed.sql
 ```
+
+O seed roda numa transação só e para no primeiro erro. Pode rodar de novo: o que já
+existe (mesmo `id`) é pulado. No CI, com o Postgres do workflow (0.17), o passo é o
+mesmo, depois do `goose up`: `psql "$GOOSE_DBSTRING" -f db/seed.sql`.
 
 Duas conexões, de propósito: `GOOSE_DBSTRING` é o dono das tabelas (migrations e seed) e ignora o RLS; `DATABASE_URL` é o `app_user`, o único usuário que a API usa.
 
-O seed cria dois tenants fictícios (`alfa` e `beta`). São dois de propósito: com um só não é possível testar isolamento entre tenants.
+O seed cria dois tenants fictícios (`alfa` e `beta`). São dois de propósito: com um só não é possível testar isolamento entre tenants. UUIDs fixos usados no config da T1 (1.1):
+
+| Variável | UUID | O que é |
+|---|---|---|
+| `TENANT_FIXO` | `11111111-1111-1111-1111-111111111111` | tenant Barbearia Alfa |
+| `PRESTADOR_FIXO` | `cccccccc-cccc-cccc-cccc-cccccccccccc` | Alfa Prestador (papel `prestador`) |
+| `SERVICO_FIXO` | `11111111-0005-0000-0000-000000000001` | serviço Corte do Alfa |
+
+O administrador do Alfa é `aaaaaaaa-…` e o da Beta, `bbbbbbbb-…`; o padrão dos demais
+UUIDs está no cabeçalho de `db/seed.sql`. Os usuários do seed não fazem login: o
+`senha_hash` é falso.
 
 Conectado como `app_user` (`psql "$DATABASE_URL"`, nunca como o dono das tabelas):
 
