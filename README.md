@@ -108,7 +108,6 @@ Toda migration tem `Up` e `Down`, e os dois são testados: `goose up`, `goose do
 ### Seed e verificação de isolamento
 
 ```bash
-sqlc generate                 # a partir da T1: regenera internal/storage/db
 set -a; source .env; set +a   # exporta as variáveis para o psql
 goose up                      # o seed exige o banco migrado
 psql "$GOOSE_DBSTRING" -f db/seed.sql   # como dono das tabelas: ignora o RLS
