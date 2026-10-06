@@ -13,5 +13,9 @@
    `internal/api/erros.go`.
 5. **Git:** `CONTRIBUTING.md`. Branch a partir da `main`, um PR por card com
    `Closes #N`, nada de push direto na `main`.
+6. **Sem referência ao Claude no que vai para o GitHub.** Commits, PRs, comentários
+   e código não mencionam Claude, Claude Code nem IA: nada de `Co-Authored-By`,
+   `Claude-Session`, "Generated with Claude Code", link de sessão ou de thread.
+   Commit no nome de quem pediu, uma linha no padrão do `CONTRIBUTING.md`.
 
 Plano em `docs/backlog.md`; requisitos e decisões tomadas em `docs/requisitos.md`.
