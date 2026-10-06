@@ -77,27 +77,33 @@ INSERT INTO disponibilidades (id, tenant_id, prestador_id, dia_semana, hora_inic
 ON CONFLICT (id) DO NOTHING;
 
 -- valor_centavos e fim saem do serviço no próprio INSERT: valor igual ao preço
--- por construção. Datas relativas ao dia em que o seed roda (dia + hora local do
--- tenant), para sempre haver agendamentos passados e futuros.
+-- por construção. Data = próximo (futuro) ou último (passado) dia da semana dow,
+-- contado a partir de hoje em São Paulo (1 a 7 dias), + hora local do tenant.
+-- Assim sempre há agendamentos passados e futuros, e todos caem dentro da
+-- disponibilidade do prestador, seja qual for o dia em que o seed roda.
 INSERT INTO agendamentos (id, tenant_id, cliente_id, servico_id, prestador_id, inicio, fim, status, valor_centavos)
 SELECT a.id::uuid, a.tenant_id::uuid, a.cliente_id::uuid, s.id, a.prestador_id::uuid,
-       (current_date + a.dia + a.hora::time) AT TIME ZONE 'America/Sao_Paulo',
-       (current_date + a.dia + a.hora::time) AT TIME ZONE 'America/Sao_Paulo' + s.duracao_minutos * interval '1 minute',
+       x.inicio, x.inicio + s.duracao_minutos * interval '1 minute',
        a.status, s.preco_centavos
 FROM (VALUES
-  -- Alfa: o administrador criador também atende
-  ('11111111-0007-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000001', '11111111-0005-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', -2, '10:00', 'concluido'),
-  ('11111111-0007-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000002', '11111111-0005-0000-0000-000000000003', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',  1, '09:00', 'confirmado'),
-  -- Alfa: prestador; mesmo horário do administrador, prestador diferente
-  ('11111111-0007-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000003', '11111111-0005-0000-0000-000000000002', 'cccccccc-cccc-cccc-cccc-cccccccccccc',  1, '09:00', 'confirmado'),
-  -- Alfa: cancelado libera o horário, que o seguinte ocupa
-  ('11111111-0007-0000-0000-000000000004', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000001', '11111111-0005-0000-0000-000000000001', 'cccccccc-cccc-cccc-cccc-cccccccccccc',  2, '14:00', 'cancelado'),
-  ('11111111-0007-0000-0000-000000000005', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000002', '11111111-0005-0000-0000-000000000001', 'cccccccc-cccc-cccc-cccc-cccccccccccc',  2, '14:00', 'confirmado'),
-  -- Beta: '[)' deixa a consulta das 9h e o retorno das 10h encostarem
-  ('22222222-0007-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', '22222222-0004-0000-0000-000000000001', '22222222-0005-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', -3, '15:00', 'concluido'),
-  ('22222222-0007-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', '22222222-0004-0000-0000-000000000001', '22222222-0005-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',  1, '09:00', 'confirmado'),
-  ('22222222-0007-0000-0000-000000000003', '22222222-2222-2222-2222-222222222222', '22222222-0004-0000-0000-000000000002', '22222222-0005-0000-0000-000000000002', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',  1, '10:00', 'confirmado')
-) AS a (id, tenant_id, cliente_id, servico_id, prestador_id, dia, hora, status)
+  -- Alfa: o administrador criador também atende (sáb 10h passado, qua 9h)
+  ('11111111-0007-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000001', '11111111-0005-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 6, 'passado', '10:00', 'concluido'),
+  ('11111111-0007-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000002', '11111111-0005-0000-0000-000000000003', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 3, 'futuro',  '09:00', 'confirmado'),
+  -- Alfa: prestador; mesmo dia, logo depois do administrador (outro prestador)
+  ('11111111-0007-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000003', '11111111-0005-0000-0000-000000000002', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 3, 'futuro',  '10:00', 'confirmado'),
+  -- Alfa: cancelado libera o horário, que o seguinte ocupa (qui 14h)
+  ('11111111-0007-0000-0000-000000000004', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000001', '11111111-0005-0000-0000-000000000001', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 4, 'futuro',  '14:00', 'cancelado'),
+  ('11111111-0007-0000-0000-000000000005', '11111111-1111-1111-1111-111111111111', '11111111-0004-0000-0000-000000000002', '11111111-0005-0000-0000-000000000001', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 4, 'futuro',  '14:00', 'confirmado'),
+  -- Beta: sex 15h passado; '[)' deixa a consulta das 9h e o retorno das 10h (ter) encostarem
+  ('22222222-0007-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', '22222222-0004-0000-0000-000000000001', '22222222-0005-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 5, 'passado', '15:00', 'concluido'),
+  ('22222222-0007-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', '22222222-0004-0000-0000-000000000001', '22222222-0005-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 2, 'futuro',  '09:00', 'confirmado'),
+  ('22222222-0007-0000-0000-000000000003', '22222222-2222-2222-2222-222222222222', '22222222-0004-0000-0000-000000000002', '22222222-0005-0000-0000-000000000002', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 2, 'futuro',  '10:00', 'confirmado')
+) AS a (id, tenant_id, cliente_id, servico_id, prestador_id, dow, quando, hora, status)
+CROSS JOIN (SELECT (now() AT TIME ZONE 'America/Sao_Paulo')::date AS base) b
+CROSS JOIN LATERAL (SELECT (CASE a.quando
+    WHEN 'futuro'  THEN b.base + ((a.dow - extract(dow FROM b.base)::int + 6) % 7) + 1
+    WHEN 'passado' THEN b.base - ((extract(dow FROM b.base)::int - a.dow + 6) % 7) - 1
+  END + a.hora::time) AT TIME ZONE 'America/Sao_Paulo' AS inicio) x
 -- LEFT: serviço errado vira NULL e falha no NOT NULL, em vez de sumir a linha.
 LEFT JOIN servicos s ON s.id = a.servico_id::uuid AND s.tenant_id = a.tenant_id::uuid
 ON CONFLICT (id) DO NOTHING;
