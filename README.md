@@ -194,7 +194,7 @@ Hoje:
 ```
 thesmartbooking/
 ├── .github/
-│   ├── workflows/ci.yml        # Go (gofmt, vet, build, test) e web (lint, build) em push e PR para a main
+│   ├── workflows/ci.yml        # em push e PR para a main: Go (gofmt, build, vet; Postgres 16 com migrations up, down e up de novo; testes, inclusive os de banco) e web (lint, build)
 │   └── pull_request_template.md
 ├── cmd/api/                    # entrada da API
 ├── internal/api/               # handlers e formato de erro (docs/erros-api.md)
