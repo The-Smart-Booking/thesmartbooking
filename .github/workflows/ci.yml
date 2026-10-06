@@ -11,6 +11,33 @@ jobs:
     name: Go Lint & Test
     runs-on: ubuntu-latest
 
+    # Banco só de teste, descartado ao fim do job: senhas fixas não são segredo.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: smartbooking
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d smartbooking"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_USER: ci
+      POSTGRES_DB: smartbooking
+      PGHOST: localhost
+      PGPASSWORD: ci
+      APP_USER_PASSWORD: ci_app
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: postgres://ci:ci@localhost:5432/smartbooking?sslmode=disable
+      GOOSE_MIGRATION_DIR: db/migrations
+      DATABASE_URL: postgres://app_user:ci_app@localhost:5432/smartbooking?sslmode=disable
+
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v7
@@ -30,8 +57,22 @@ jobs:
       - name: Análise estática (go vet)
         run: go vet ./...
 
+      - name: Instalar goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@v3.28.0
+
+      # Antes do goose up: a 009 faz REVOKE para o app_user (guia §009).
+      - name: Criar app_user
+        run: sh db/init/app_user.sh
+
+      - name: Migrations (goose up)
+        run: goose up
+
+      - name: Migrations (Down e Up de novo)
+        run: goose down-to 0 && goose up
+
+      # -v mostra PASS/SKIP por teste; sem as variáveis no CI, o teste de banco falha.
       - name: Executar testes (go test)
-        run: go test ./...
+        run: go test -v ./...
 
   web:
     name: Web Lint & Build
