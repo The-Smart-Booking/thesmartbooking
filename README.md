@@ -29,7 +29,7 @@ Hoje:
 ```
 thesmartbooking/
 ├── .github/
-│   ├── workflows/ci.yml        # Go (gofmt, vet, build, test) e web (lint, build) em PR para a main
+│   ├── workflows/ci.yml        # Go (gofmt, vet, build, test) e web (lint, build) em push e PR para a main
 │   └── pull_request_template.md
 ├── cmd/api/                    # entrada da API
 ├── internal/api/               # handlers e formato de erro (docs/erros-api.md)
@@ -100,7 +100,7 @@ goose status                  # o que já rodou e o que falta
 goose up                      # aplica todas as pendentes
 goose down                    # desfaz só a última
 goose down-to 0               # desfaz todas
-goose -s create nome sql      # nova migration: 00002_nome.sql (-s = numeração sequencial)
+goose -s create nome sql      # nova migration: 0000N_nome.sql (-s = numeração sequencial)
 ```
 
 Toda migration tem `Up` e `Down`, e os dois são testados: `goose up`, `goose down-to 0`, `goose up`.
@@ -176,6 +176,7 @@ Backlog detalhado em `docs/backlog.md`; cards já criados em `docs/cards.md`. St
 | Arquivo | Conteúdo |
 |---|---|
 | [`docs/requisitos.md`](docs/requisitos.md) | Requisitos, arquitetura e decisões técnicas tomadas (§12) |
+| [`docs/especificacao-fluxo.md`](docs/especificacao-fluxo.md) | Papéis e permissões, ciclo de vida do agendamento, telas e modelo de dados |
 | [`docs/backlog.md`](docs/backlog.md) | Backlog por fatias verticais |
 | [`docs/guia-banco-de-dados.md`](docs/guia-banco-de-dados.md) | Migrations comentadas, armadilhas do RLS e acesso a dados |
 | [`docs/erros-api.md`](docs/erros-api.md) | Formato de erro da API |
