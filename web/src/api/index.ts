@@ -21,11 +21,12 @@ export type Cliente = {
   telefone: string | null;
 };
 
-/** GET /api/agendamentos. Sem de/ate, a API usa o período padrão. */
-export function listarAgendamentos(de?: string, ate?: string) {
+/** GET /api/agendamentos. Sem de/ate, a API usa o período padrão; sem prestador_id, todos do tenant. */
+export function listarAgendamentos(de?: string, ate?: string, prestador_id?: string) {
   const q = new URLSearchParams();
   if (de) q.set("de", de);
   if (ate) q.set("ate", ate);
+  if (prestador_id) q.set("prestador_id", prestador_id);
   return get<Agendamento[]>(q.size ? `/api/agendamentos?${q}` : "/api/agendamentos");
 }
 
