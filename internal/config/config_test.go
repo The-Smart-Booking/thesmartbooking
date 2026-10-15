@@ -1,8 +1,12 @@
 package config
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -145,24 +149,113 @@ func TestLoadAmbienteVenceArquivo(t *testing.T) {
 	}
 }
 
+// O erro do godotenv cita o conteúdo cru do .env: senha nenhuma pode ir junto.
+func TestLoadEnvMalformadoNaoVazaSegredo(t *testing.T) {
+	semAmbiente(t)
+	escreverEnv(t, "DATABASE_URL=\"postgres://app_user:SEGREDO@localhost/x\nTENANT_FIXO="+tenantAlfa+"\n")
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load sem erro, queria erro de .env malformado")
+	}
+	if strings.Contains(err.Error(), "SEGREDO") || !strings.Contains(err.Error(), ".env") {
+		t.Errorf("erro = %v", err)
+	}
+}
+
+// PowerShell 5.1 grava com BOM (Out-File, >): o .env tem que valer igual.
+func TestLoadEnvComBOM(t *testing.T) {
+	semAmbiente(t)
+	escreverEnv(t, "\xef\xbb\xbfDATABASE_URL="+urlAppUser+"\nTENANT_FIXO="+tenantAlfa+
+		"\nPRESTADOR_FIXO="+prestadorAlfa+"\nSERVICO_FIXO="+servicoCorte+"\n")
+	if _, err := Load(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Leituras do ambiente que o guarda abaixo procura, pelo nome local do import.
+var leiturasAmbiente = map[string]map[string]bool{
+	"os":      {"Getenv": true, "LookupEnv": true, "Environ": true, "ExpandEnv": true},
+	"syscall": {"Getenv": true, "Environ": true},
+}
+
+// leAmbiente diz se o arquivo chama alguma leitura do ambiente, pela AST (pega
+// import com alias, ignora comentário e string).
+func leAmbiente(arquivo string) (bool, error) {
+	f, err := parser.ParseFile(token.NewFileSet(), arquivo, nil, parser.SkipObjectResolution)
+	if err != nil {
+		return false, err
+	}
+	locais := map[string]map[string]bool{}
+	for _, imp := range f.Imports {
+		caminho, _ := strconv.Unquote(imp.Path.Value)
+		funcs, ok := leiturasAmbiente[caminho]
+		if !ok {
+			continue
+		}
+		nome := caminho
+		if imp.Name != nil {
+			nome = imp.Name.Name
+		}
+		locais[nome] = funcs
+	}
+	achou := false
+	ast.Inspect(f, func(n ast.Node) bool {
+		if s, ok := n.(*ast.SelectorExpr); ok {
+			if x, ok := s.X.(*ast.Ident); ok && locais[x.Name][s.Sel.Name] {
+				achou = true
+			}
+		}
+		return !achou
+	})
+	return achou, nil
+}
+
+func TestLeAmbiente(t *testing.T) {
+	casos := map[string]struct {
+		codigo string
+		quer   bool
+	}{
+		"getenv":     {"import \"os\"\nvar _ = os.Getenv(\"X\")", true},
+		"alias":      {"import o \"os\"\nvar _ = o.LookupEnv", true},
+		"environ":    {"import \"os\"\nvar _ = os.Environ()", true},
+		"syscall":    {"import \"syscall\"\nvar _, _ = syscall.Getenv(\"X\")", true},
+		"comentario": {"import \"os\"\n// não use os.Getenv(\nvar _ = os.Args", false},
+		"string":     {"var _ = \"os.Getenv(\"", false},
+	}
+	dir := t.TempDir()
+	for nome, c := range casos {
+		t.Run(nome, func(t *testing.T) {
+			p := filepath.Join(dir, nome+".go")
+			if err := os.WriteFile(p, []byte("package x\n"+c.codigo+"\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			got, err := leAmbiente(p)
+			if err != nil || got != c.quer {
+				t.Errorf("leAmbiente = %v, %v; queria %v", got, err, c.quer)
+			}
+		})
+	}
+}
+
 // Critério da 1.1: só internal/config lê o ambiente. Testes ficam de fora (os de
-// internal/storage leem DATABASE_URL e CI para decidir se pulam).
+// internal/storage leem DATABASE_URL e CI para decidir se pulam). Diretórios
+// ocultos, _*, testdata e o web/ da raiz são pulados, como o go faz.
 func TestSoConfigLeAmbiente(t *testing.T) {
 	raiz, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
 		t.Fatal(err)
 	}
-	config := filepath.Join(raiz, "internal", "config")
+	pular := map[string]bool{
+		filepath.Join(raiz, "internal", "config"): true,
+		filepath.Join(raiz, "web"):                true,
+	}
 	err = filepath.WalkDir(raiz, func(p string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
-			switch d.Name() {
-			case ".git", "node_modules", "web":
-				return filepath.SkipDir
-			}
-			if p == config {
+			n := d.Name()
+			if p != raiz && (pular[p] || n == "testdata" || strings.HasPrefix(n, ".") || strings.HasPrefix(n, "_")) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -170,11 +263,11 @@ func TestSoConfigLeAmbiente(t *testing.T) {
 		if !strings.HasSuffix(p, ".go") || strings.HasSuffix(p, "_test.go") {
 			return nil
 		}
-		b, err := os.ReadFile(p)
+		le, err := leAmbiente(p)
 		if err != nil {
 			return err
 		}
-		if s := string(b); strings.Contains(s, "os.Getenv(") || strings.Contains(s, "os.LookupEnv(") {
+		if le {
 			t.Errorf("%s lê o ambiente direto; use internal/config", p)
 		}
 		return nil

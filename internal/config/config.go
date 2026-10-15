@@ -3,6 +3,7 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -37,13 +38,20 @@ const (
 // definida no ambiente vence o .env (no CI não há .env). Devolve todos os problemas
 // de uma vez, cada um com o nome da variável.
 func Load() (Config, error) {
-	if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return Config{}, fmt.Errorf("config: lendo .env: %w", err)
+	arquivo, err := lerEnv(".env")
+	if err != nil {
+		return Config{}, err
+	}
+	getenv := func(nome string) string {
+		if v, ok := os.LookupEnv(nome); ok {
+			return v
+		}
+		return arquivo[nome]
 	}
 
 	var errs []error
 	obrigatoria := func(nome string) string {
-		v := os.Getenv(nome)
+		v := getenv(nome)
 		if v == "" {
 			errs = append(errs, fmt.Errorf("%s ausente (ver .env.example)", nome))
 		}
@@ -66,7 +74,7 @@ func Load() (Config, error) {
 
 	c := Config{
 		DatabaseURL:   obrigatoria("DATABASE_URL"),
-		PortaHTTP:     os.Getenv("PORTA_HTTP"),
+		PortaHTTP:     getenv("PORTA_HTTP"),
 		TenantFixo:    id("TENANT_FIXO"),
 		PrestadorFixo: id("PRESTADOR_FIXO"),
 		ServicoFixo:   id("SERVICO_FIXO"),
@@ -91,4 +99,22 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("config:\n%w", err)
 	}
 	return c, nil
+}
+
+// lerEnv lê o .env sem exportar para o processo: o arquivo também tem a senha do
+// dono das tabelas. Ausente, devolve vazio. Tira o BOM (o PowerShell 5.1 grava com
+// ele). O erro do godotenv cita o conteúdo cru, com senhas: não vai adiante.
+func lerEnv(caminho string) (map[string]string, error) {
+	b, err := os.ReadFile(caminho)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("config: lendo %s: %w", caminho, err)
+	}
+	vars, err := godotenv.UnmarshalBytes(bytes.TrimPrefix(b, []byte("\xef\xbb\xbf")))
+	if err != nil {
+		return nil, fmt.Errorf("config: %s malformado (aspas sem fechar?); compare com o .env.example", caminho)
+	}
+	return vars, nil
 }
