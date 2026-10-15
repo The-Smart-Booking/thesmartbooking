@@ -21,11 +21,11 @@ type Config struct {
 	DatabaseURL string
 	PortaHTTP   string
 
-	// Sessão da Fatia 1, enquanto não há login (docs/requisitos.md §12).
-	TenantFixo    uuid.UUID // TODO(T2): remover (2.12)
-	PrestadorFixo uuid.UUID // TODO(T2): remover (2.12)
-	// Serviço da Fatia 1, enquanto não há escolha de serviço.
-	ServicoFixo uuid.UUID // TODO(T6): remover (6.6)
+	// Sessão da Fatia 1, enquanto não há login; saem na 2.12 (docs/requisitos.md §12).
+	TenantFixo    uuid.UUID // TODO(T2): remover
+	PrestadorFixo uuid.UUID // TODO(T2): remover
+	// Serviço da Fatia 1, enquanto não há escolha de serviço; sai na 6.6.
+	ServicoFixo uuid.UUID // TODO(T6): remover
 }
 
 const (
