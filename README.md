@@ -120,6 +120,7 @@ docker compose up -d      # PostgreSQL em localhost:5467, Adminer em localhost:8
 goose up                  # aplica as migrations
 
 go run ./cmd/api          # deve imprimir "Hello World"
+psql "$GOOSE_DBSTRING" -f db/seed.sql   # o teste de repositório lê o seed
 go test ./...
 ```
 
