@@ -51,6 +51,10 @@ jobs:
       - name: Formatação (gofmt)
         run: '[ -z "$(gofmt -l .)" ] || { gofmt -l .; exit 1; }'
 
+      # internal/storage/db não se edita à mão: query ou migration mudou, regenera.
+      - name: Código gerado em dia (sqlc diff)
+        run: docker run --rm -v "$PWD":/src -w /src sqlc/sqlc:1.31.1 diff
+
       - name: Compilar (go build)
         run: go build ./...
 
@@ -69,6 +73,10 @@ jobs:
 
       - name: Migrations (Down e Up de novo)
         run: goose down-to 0 && goose up
+
+      # O teste de repositório (1.2) lê os dados do seed.
+      - name: Seed
+        run: psql "$GOOSE_DBSTRING" -f db/seed.sql
 
       # -v mostra PASS/SKIP por teste; sem as variáveis no CI, o teste de banco falha.
       - name: Executar testes (go test)
