@@ -18,8 +18,6 @@ type Handlers struct {
 	// Tx devolve a transação da requisição, já com set_config('app.tenant_id',
 	// ..., true). Quem abre é o middleware da 1.3; nos testes, o próprio teste.
 	Tx func(*http.Request) pgx.Tx
-	// PRESTADOR_FIXO e SERVICO_FIXO (1.1): a Fatia 1 agenda sempre com eles.
-	PrestadorID, ServicoID uuid.UUID
 }
 
 // Rotas registra as rotas no mux.
@@ -27,7 +25,6 @@ func (h *Handlers) Rotas(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/clientes", h.criarCliente)
 	mux.HandleFunc("GET /api/clientes", h.listarClientes)
 	mux.HandleFunc("GET /api/agendamentos", h.listarAgendamentos)
-	mux.HandleFunc("POST /api/agendamentos", h.criarAgendamento)
 }
 
 const limiteCorpo = 1 << 20 // 1 MiB

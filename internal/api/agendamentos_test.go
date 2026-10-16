@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -74,73 +73,6 @@ func TestListarAgendamentosInvalido(t *testing.T) {
 	} {
 		t.Run(nome, func(t *testing.T) {
 			exigirErro(t, chamar(t, semBanco(t), "GET", "/api/agendamentos?"+query, ""), http.StatusBadRequest, CodigoRequisicaoInvalida)
-		})
-	}
-}
-
-func TestCriarAgendamento(t *testing.T) {
-	h, tx := comBanco(t, seedAlfa)
-	ctx := context.Background()
-	criar := func(corpo string) *httptest.ResponseRecorder {
-		t.Helper()
-		return chamar(t, h, "POST", "/api/agendamentos", corpo)
-	}
-
-	// Sem fim: duração do Corte (30 min). Preço do Corte no seed: 4500.
-	w := criar(`{"cliente_id":"` + seedClienteAlfa.String() + `","inicio":"2099-02-01T06:00:00-03:00"}`)
-	var a agendamentoJSON
-	if w.Code != http.StatusCreated || json.Unmarshal(w.Body.Bytes(), &a) != nil {
-		t.Fatalf("criar: %d %s", w.Code, w.Body)
-	}
-	if !a.Inicio.Equal(time.Date(2099, 2, 1, 9, 0, 0, 0, time.UTC)) || a.Fim.Sub(a.Inicio) != 30*time.Minute ||
-		a.ValorCentavos != 4500 || a.PrestadorID != seedPrestador || a.ClienteNome == "" || a.Inicio.Location() != time.UTC {
-		t.Errorf("criado = %+v", a)
-	}
-
-	// Consecutivo: 9h30–10h logo depois de 9h–9h30.
-	if w := criar(`{"cliente_id":"` + seedClienteAlfa.String() + `","inicio":"2099-02-01T09:30:00Z","fim":"2099-02-01T10:00:00Z"}`); w.Code != http.StatusCreated {
-		t.Errorf("consecutivo: %d %s", w.Code, w.Body)
-	}
-
-	// Preço congelado: mudar o serviço depois não mexe no agendamento.
-	if _, err := tx.Exec(ctx, "UPDATE servicos SET preco_centavos = 9999 WHERE id = $1", seedServicoAlfa); err != nil {
-		t.Fatal(err)
-	}
-	var valor int32
-	if err := tx.QueryRow(ctx, "SELECT valor_centavos FROM agendamentos WHERE id = $1", a.ID).Scan(&valor); err != nil || valor != 4500 {
-		t.Errorf("valor depois de mudar o preço: %d, err %v", valor, err)
-	}
-
-	// Cliente do Beta: o Alfa nem enxerga.
-	exigirErro(t, criar(`{"cliente_id":"`+seedClienteBeta.String()+`","inicio":"2099-02-02T09:00:00Z"}`), http.StatusNotFound, CodigoNaoEncontrado)
-
-	// Por último: a violação 23P01 aborta a transação.
-	exigirErro(t, criar(`{"cliente_id":"`+seedClienteAlfa.String()+`","inicio":"2099-02-01T09:15:00Z"}`), http.StatusConflict, CodigoConflitoHorario)
-}
-
-func TestCriarAgendamentoPrestadorRemovido(t *testing.T) {
-	h, tx := comBanco(t, seedAlfa)
-	if _, err := tx.Exec(context.Background(), "UPDATE memberships SET removido_em = now() WHERE usuario_id = $1 AND tenant_id = $2", seedPrestador, seedAlfa); err != nil {
-		t.Fatal(err)
-	}
-	w := chamar(t, h, "POST", "/api/agendamentos", `{"cliente_id":"`+seedClienteAlfa.String()+`","inicio":"2099-02-03T09:00:00Z"}`)
-	exigirErro(t, w, http.StatusNotFound, CodigoNaoEncontrado)
-}
-
-func TestCriarAgendamentoInvalido(t *testing.T) {
-	c := `"cliente_id":"` + seedClienteAlfa.String() + `"`
-	for nome, corpo := range map[string]string{
-		"sem cliente":         `{"inicio":"2099-02-01T09:00:00Z"}`,
-		"cliente não uuid":    `{"cliente_id":"1","inicio":"2099-02-01T09:00:00Z"}`,
-		"sem inicio":          `{` + c + `}`,
-		"inicio sem fuso":     `{` + c + `,"inicio":"2099-02-01T09:00:00"}`,
-		"fim antes do inicio": `{` + c + `,"inicio":"2099-02-01T09:00:00Z","fim":"2099-02-01T08:00:00Z"}`,
-		"fim igual ao inicio": `{` + c + `,"inicio":"2099-02-01T09:00:00Z","fim":"2099-02-01T09:00:00Z"}`,
-		"mais de 24h":         `{` + c + `,"inicio":"2099-02-01T09:00:00Z","fim":"2099-02-02T10:00:00Z"}`,
-		"valor no payload":    `{` + c + `,"inicio":"2099-02-01T09:00:00Z","valor_centavos":1}`,
-	} {
-		t.Run(nome, func(t *testing.T) {
-			exigirErro(t, chamar(t, semBanco(t), "POST", "/api/agendamentos", corpo), http.StatusBadRequest, CodigoRequisicaoInvalida)
 		})
 	}
 }
