@@ -526,6 +526,8 @@ usuário do tenant A e verificar que nenhum endpoint retorna dado do tenant B (i
 | UUID no Go | `google/uuid` via `overrides` do sqlc |
 | Rotas da API | Tudo sob `/api`; proxy do Vite sem reescrita |
 | Serviço na Fatia 1 | `SERVICO_FIXO` no config até a 6.6 |
+| Sessão na Fatia 1 | `TENANT_FIXO` e `PRESTADOR_FIXO` no config até a 2.12 |
+| Configuração | Só `internal/config` lê o ambiente; `.env` via `godotenv`, ambiente real vence o arquivo |
 | Worker × RLS | Laço por tenant com `ComTenant`, como `app_user` |
 
 Decididos em 02/10/2026:
