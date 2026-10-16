@@ -44,11 +44,13 @@ func (q *Queries) BuscarAgendamento(ctx context.Context, arg BuscarAgendamentoPa
 
 const listarAgendamentos = `-- name: ListarAgendamentos :many
 
-SELECT id, tenant_id, cliente_id, servico_id, prestador_id, inicio, fim, status, valor_centavos, observacoes, criado_em, atualizado_em FROM agendamentos
-WHERE tenant_id = $1
-  AND inicio >= $2 AND inicio < $3
-  AND ($4::uuid IS NULL OR prestador_id = $4)
-ORDER BY inicio
+SELECT a.id, a.tenant_id, a.cliente_id, a.servico_id, a.prestador_id, a.inicio, a.fim, a.status, a.valor_centavos, a.observacoes, a.criado_em, a.atualizado_em, c.nome AS cliente_nome
+FROM agendamentos a
+JOIN clientes c ON c.id = a.cliente_id AND c.tenant_id = a.tenant_id
+WHERE a.tenant_id = $1
+  AND a.inicio >= $2 AND a.inicio < $3
+  AND ($4::uuid IS NULL OR a.prestador_id = $4)
+ORDER BY a.inicio
 `
 
 type ListarAgendamentosParams struct {
@@ -58,11 +60,28 @@ type ListarAgendamentosParams struct {
 	PrestadorID *uuid.UUID
 }
 
+type ListarAgendamentosRow struct {
+	ID            uuid.UUID
+	TenantID      uuid.UUID
+	ClienteID     uuid.UUID
+	ServicoID     uuid.UUID
+	PrestadorID   uuid.UUID
+	Inicio        pgtype.Timestamptz
+	Fim           pgtype.Timestamptz
+	Status        string
+	ValorCentavos int32
+	Observacoes   *string
+	CriadoEm      pgtype.Timestamptz
+	AtualizadoEm  pgtype.Timestamptz
+	ClienteNome   string
+}
+
 // WHERE tenant_id explícito em toda query, mesmo com RLS: é a camada (b) de
 // defesa (requisitos §6.2).
 // Período pelo inicio, [de, ate). prestador_id nulo = a empresa toda (guia,
 // §Escopo por prestador).
-func (q *Queries) ListarAgendamentos(ctx context.Context, arg ListarAgendamentosParams) ([]Agendamento, error) {
+// Com o nome do cliente, para a tela não fazer uma chamada por linha (1.6).
+func (q *Queries) ListarAgendamentos(ctx context.Context, arg ListarAgendamentosParams) ([]ListarAgendamentosRow, error) {
 	rows, err := q.db.Query(ctx, listarAgendamentos,
 		arg.TenantID,
 		arg.De,
@@ -73,9 +92,9 @@ func (q *Queries) ListarAgendamentos(ctx context.Context, arg ListarAgendamentos
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Agendamento
+	var items []ListarAgendamentosRow
 	for rows.Next() {
-		var i Agendamento
+		var i ListarAgendamentosRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -89,6 +108,7 @@ func (q *Queries) ListarAgendamentos(ctx context.Context, arg ListarAgendamentos
 			&i.Observacoes,
 			&i.CriadoEm,
 			&i.AtualizadoEm,
+			&i.ClienteNome,
 		); err != nil {
 			return nil, err
 		}

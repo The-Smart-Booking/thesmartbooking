@@ -27,10 +27,11 @@ var ErrNaoEncontrado = errors.New("storage: não encontrado")
 // Tipos do código gerado, para quem está fora de storage não importar db.
 // Cliente (com vinculo_token) só sai do Criar; as leituras devolvem os *Row, sem ele.
 type (
-	Cliente           = db.Cliente
-	ListarClientesRow = db.ListarClientesRow
-	BuscarClienteRow  = db.BuscarClienteRow
-	Agendamento       = db.Agendamento
+	Cliente               = db.Cliente
+	ListarClientesRow     = db.ListarClientesRow
+	BuscarClienteRow      = db.BuscarClienteRow
+	Agendamento           = db.Agendamento
+	AgendamentoComCliente = db.ListarAgendamentosRow
 )
 
 func naoEncontrado(err error) error {
@@ -63,7 +64,7 @@ func NovoAgendamentosRepo(tx pgx.Tx) *AgendamentosRepo { return &AgendamentosRep
 
 // Listar devolve os agendamentos com inicio em [de, ate). prestadorID nil = a
 // empresa toda: quem monta o filtro é o middleware de escopo (2.7), nunca o handler.
-func (r *AgendamentosRepo) Listar(ctx context.Context, tenantID uuid.UUID, de, ate time.Time, prestadorID *uuid.UUID) ([]Agendamento, error) {
+func (r *AgendamentosRepo) Listar(ctx context.Context, tenantID uuid.UUID, de, ate time.Time, prestadorID *uuid.UUID) ([]AgendamentoComCliente, error) {
 	return r.q.ListarAgendamentos(ctx, db.ListarAgendamentosParams{
 		TenantID:    tenantID,
 		De:          pgtype.Timestamptz{Time: de, Valid: true},

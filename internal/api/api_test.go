@@ -16,9 +16,11 @@ import (
 // IDs do seed (db/seed.sql, 0.16). Alfa = TENANT_FIXO do .env.example.
 var (
 	seedAlfa        = uuid.MustParse("11111111-1111-1111-1111-111111111111")
-	seedBeta        = uuid.MustParse("22222222-2222-2222-2222-222222222222")
 	seedClienteAlfa = uuid.MustParse("11111111-0004-0000-0000-000000000001")
 	seedClienteBeta = uuid.MustParse("22222222-0004-0000-0000-000000000001")
+	seedServicoAlfa = uuid.MustParse("11111111-0005-0000-0000-000000000001") // SERVICO_FIXO
+	seedAdminAlfa   = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	seedPrestador   = uuid.MustParse("cccccccc-cccc-cccc-cccc-cccccccccccc") // PRESTADOR_FIXO
 )
 
 // comBanco monta as rotas sobre uma transação do app_user com set_config(...,
