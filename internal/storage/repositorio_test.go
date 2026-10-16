@@ -28,7 +28,7 @@ func TestRepositorioAlfaNaoEnxergaBeta(t *testing.T) {
 	app := conectar(t, "DATABASE_URL")
 	ctx := context.Background()
 
-	comTenant(t, app, seedAlfa.String(), func(tx pgx.Tx) error {
+	err := comTenant(t, app, seedAlfa.String(), func(tx pgx.Tx) error {
 		clientes, agendamentos := NovoClientesRepo(tx), NovoAgendamentosRepo(tx)
 
 		cs, err := clientes.Listar(ctx, seedAlfa)
@@ -82,4 +82,7 @@ func TestRepositorioAlfaNaoEnxergaBeta(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
