@@ -110,6 +110,8 @@ cp .env.example .env
 | `GOOSE_DBSTRING` | Conexão do **dono das tabelas** — migrations e seed. Ignora o RLS. |
 | `DATABASE_URL` | Conexão do **`app_user`** — a única que a API usa. Sujeita ao RLS. |
 | `GOOSE_DRIVER`, `GOOSE_MIGRATION_DIR` | Lidas pelo goose automaticamente |
+| `TENANT_FIXO`, `PRESTADOR_FIXO`, `SERVICO_FIXO` | Sessão e serviço da Fatia 1, sem login (UUIDs do seed, tabela abaixo). Temporárias: saem na 2.12 e na 6.6 |
+| `PORTA_HTTP` | Porta da API; opcional, padrão `8080` (a do proxy do Vite) |
 
 > São duas conexões de propósito. Se a API conectar como dono das tabelas, todas as policies de RLS viram decoração e o isolamento entre organizações deixa de existir.
 
@@ -119,7 +121,7 @@ cp .env.example .env
 docker compose up -d      # PostgreSQL em localhost:5467, Adminer em localhost:8088
 goose up                  # aplica as migrations
 
-go run ./cmd/api          # deve imprimir "Hello World"
+go run ./cmd/api          # sobe em :8080 lendo o .env; sem variável obrigatória, não sobe
 psql "$GOOSE_DBSTRING" -f db/seed.sql   # o teste de repositório lê o seed
 go test ./...
 ```
