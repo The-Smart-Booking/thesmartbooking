@@ -2,7 +2,14 @@
 
 Fatia 0 do backlog (itens 0.7 a 0.18) e base de acesso a dados da Fatia 1 (1.2 e
 1.3). Complementa `docs/requisitos.md`.
-Versão **1.6** · 06/10/2026
+Versão **1.7** · 16/10/2026
+
+## Mudanças desde a v1.6
+
+- **Helper de transação (1.2):** o `fn` do `ComTenant` recebe `pgx.Tx`, não
+  `*db.Queries`. Os repositórios de `internal/storage` são construídos sobre o
+  `tx`; assim o middleware da 1.3 não importa `internal/storage/db`, e passar o
+  pool no lugar da transação não compila.
 
 ## Mudanças desde a v1.5
 
@@ -954,7 +961,7 @@ pior, bug silencioso nas tabelas fora do RLS. Por isso o pacote gerado só é
 usado por dentro de `internal/storage`, sempre através de um helper:
 
 ```go
-func (s *Store) ComTenant(ctx context.Context, tenantID uuid.UUID, fn func(q *db.Queries) error) error {
+func (s *Store) ComTenant(ctx context.Context, tenantID uuid.UUID, fn func(tx pgx.Tx) error) error {
     tx, err := s.pool.Begin(ctx)
     if err != nil {
         return err
@@ -964,7 +971,7 @@ func (s *Store) ComTenant(ctx context.Context, tenantID uuid.UUID, fn func(q *db
     if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1, true)", tenantID.String()); err != nil {
         return err
     }
-    if err := fn(db.New(tx)); err != nil {
+    if err := fn(tx); err != nil {
         return err
     }
     return tx.Commit(ctx)
@@ -973,14 +980,15 @@ func (s *Store) ComTenant(ctx context.Context, tenantID uuid.UUID, fn func(q *db
 
 Na Fatia 1 quem chama o `ComTenant` é o middleware da 1.3: uma transação por
 requisição, com o tenant vindo de `TENANT_FIXO` (e da sessão a partir da Fatia 2).
-O repositório recebe o `*db.Queries` já amarrado ao `tx` pelo `context`, nunca o
-pool.
+O repositório é construído sobre o `pgx.Tx` (`storage.NovoClientesRepo(tx)`), nunca
+sobre o pool: o construtor só aceita `pgx.Tx`, então passar o pool não compila. Quem
+chama não vê `*db.Queries`; o `db.New(tx)` fica dentro de `internal/storage`.
 
 Uso direto, fora de uma requisição HTTP (testes, scripts):
 
 ```go
-err := s.ComTenant(ctx, tenantID, func(q *db.Queries) error {
-    clientes, err = q.ListarClientes(ctx, tenantID)
+err := s.ComTenant(ctx, tenantID, func(tx pgx.Tx) error {
+    clientes, err = storage.NovoClientesRepo(tx).Listar(ctx, tenantID)
     return err
 })
 ```

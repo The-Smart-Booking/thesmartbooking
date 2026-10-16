@@ -120,9 +120,10 @@ cp .env.example .env
 ```bash
 docker compose up -d      # PostgreSQL em localhost:5467, Adminer em localhost:8088
 goose up                  # aplica as migrations
+set -a; . ./.env; set +a  # exporta o .env para o psql e o go test
+psql "$GOOSE_DBSTRING" -f db/seed.sql   # o teste de repositório lê o seed
 
 go run ./cmd/api          # sobe em :8080 lendo o .env; sem variável obrigatória, não sobe
-psql "$GOOSE_DBSTRING" -f db/seed.sql   # o teste de repositório lê o seed
 go test ./...
 ```
 
@@ -216,13 +217,17 @@ thesmartbooking/
 │   └── pull_request_template.md
 ├── cmd/api/                    # entrada da API
 ├── internal/api/               # handlers e formato de erro (docs/erros-api.md)
-├── internal/storage/           # isolamento_test.go e exclusao_tenant_test.go: isolamento entre tenants (RLS) e exclusão de tenant
+├── internal/config/            # leitura das variáveis de ambiente e do .env
+├── internal/storage/           # repositórios — todo método recebe tenantID; testes de isolamento (RLS), exclusão de tenant e repositório
+├── internal/storage/db/        # código gerado pelo sqlc — não editar à mão
 ├── db/migrations/              # goose, SQL puro
+├── db/queries/                 # queries SQL anotadas para o sqlc
 ├── db/seed.sql                 # dois tenants fictícios (alfa e beta)
 ├── db/init/                    # app_user.sh: cria o app_user no primeiro up do compose
 ├── web/                        # frontend React + Vite
 ├── docs/
 ├── compose.yml                 # PostgreSQL 16 + Adminer
+├── sqlc.yaml                   # configuração do sqlc (pgx v5, schema = db/migrations)
 ├── .env.example
 ├── CLAUDE.md                   # regras para o Claude Code
 └── CONTRIBUTING.md
@@ -232,12 +237,7 @@ Estrutura-alvo — cada pasta nasce no card que a usa:
 
 ```
 cmd/worker/            # consumidor da fila de notificações (T3)
-internal/config/       # leitura das variáveis de ambiente (T1)
-internal/storage/      # repositórios — toda função recebe tenantID (já existe; repositórios na T1)
-internal/storage/db/   # código gerado pelo sqlc — não editar à mão (T1)
 internal/notificador/  # interface Notificador + implementação Telegram (T3)
-db/queries/            # queries SQL anotadas para o sqlc (T1)
-sqlc.yaml              # configuração do sqlc (T1)
 ```
 
 ---
