@@ -42,6 +42,60 @@ func (q *Queries) BuscarAgendamento(ctx context.Context, arg BuscarAgendamentoPa
 	return i, err
 }
 
+const criarAgendamento = `-- name: CriarAgendamento :one
+INSERT INTO agendamentos (tenant_id, cliente_id, servico_id, prestador_id, inicio, fim, valor_centavos)
+SELECT s.tenant_id, $1::uuid AS cliente_id, s.id, m.usuario_id,
+       $2::timestamptz AS inicio,
+       COALESCE($3::timestamptz,
+                $2::timestamptz + s.duracao_minutos * interval '1 minute') AS fim,
+       s.preco_centavos
+FROM servicos s
+JOIN memberships m
+  ON m.tenant_id = s.tenant_id AND m.usuario_id = $4 AND m.removido_em IS NULL
+WHERE s.tenant_id = $5 AND s.id = $6 AND s.ativo
+RETURNING id, tenant_id, cliente_id, servico_id, prestador_id, inicio, fim, status, valor_centavos, observacoes, criado_em, atualizado_em
+`
+
+type CriarAgendamentoParams struct {
+	ClienteID   uuid.UUID
+	Inicio      pgtype.Timestamptz
+	Fim         pgtype.Timestamptz
+	PrestadorID uuid.UUID
+	TenantID    uuid.UUID
+	ServicoID   uuid.UUID
+}
+
+// Uma instrução só (1.5): valor_centavos copiado do serviço, nunca do payload;
+// prestador só com membership ativo e serviço só ativo, senão zero linhas. Sem fim,
+// inicio + duração do serviço. Sobreposição fica com a constraint sem_sobreposicao
+// (23P01): checar antes em Go abre condição de corrida.
+func (q *Queries) CriarAgendamento(ctx context.Context, arg CriarAgendamentoParams) (Agendamento, error) {
+	row := q.db.QueryRow(ctx, criarAgendamento,
+		arg.ClienteID,
+		arg.Inicio,
+		arg.Fim,
+		arg.PrestadorID,
+		arg.TenantID,
+		arg.ServicoID,
+	)
+	var i Agendamento
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ClienteID,
+		&i.ServicoID,
+		&i.PrestadorID,
+		&i.Inicio,
+		&i.Fim,
+		&i.Status,
+		&i.ValorCentavos,
+		&i.Observacoes,
+		&i.CriadoEm,
+		&i.AtualizadoEm,
+	)
+	return i, err
+}
+
 const listarAgendamentos = `-- name: ListarAgendamentos :many
 
 SELECT a.id, a.tenant_id, a.cliente_id, a.servico_id, a.prestador_id, a.inicio, a.fim, a.status, a.valor_centavos, a.observacoes, a.criado_em, a.atualizado_em, c.nome AS cliente_nome
