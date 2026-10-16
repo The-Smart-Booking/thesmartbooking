@@ -15,7 +15,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/The-Smart-Booking/thesmartbooking/internal/storage/db"
@@ -24,10 +23,6 @@ import (
 // ErrNaoEncontrado: registro inexistente ou de outro tenant (o RLS nem deixa ver).
 // A API responde 404 nao_encontrado (docs/erros-api.md).
 var ErrNaoEncontrado = errors.New("storage: não encontrado")
-
-// ErrHorarioIndisponivel: a constraint sem_sobreposicao barrou (SQLSTATE 23P01).
-// A API responde 409 conflito_horario.
-var ErrHorarioIndisponivel = errors.New("storage: horário indisponível")
 
 // Tipos do código gerado, para quem está fora de storage não importar db.
 // Cliente (com vinculo_token) só sai do Criar; as leituras devolvem os *Row, sem ele.
@@ -80,33 +75,5 @@ func (r *AgendamentosRepo) Listar(ctx context.Context, tenantID uuid.UUID, de, a
 
 func (r *AgendamentosRepo) Buscar(ctx context.Context, tenantID, id uuid.UUID) (Agendamento, error) {
 	a, err := r.q.BuscarAgendamento(ctx, db.BuscarAgendamentoParams{TenantID: tenantID, ID: id})
-	return a, naoEncontrado(err)
-}
-
-// NovoAgendamento: o que vem da requisição. Fim nil = inicio + duração do serviço.
-type NovoAgendamento struct {
-	ClienteID, ServicoID, PrestadorID uuid.UUID
-	Inicio                            time.Time
-	Fim                               *time.Time
-}
-
-// Criar grava com valor_centavos copiado do serviço. ErrNaoEncontrado: prestador
-// sem membership ativo ou serviço inexistente/inativo. ErrHorarioIndisponivel:
-// sobreposição com outro agendamento do mesmo prestador.
-func (r *AgendamentosRepo) Criar(ctx context.Context, tenantID uuid.UUID, n NovoAgendamento) (Agendamento, error) {
-	p := db.CriarAgendamentoParams{
-		TenantID:    tenantID,
-		ClienteID:   n.ClienteID,
-		ServicoID:   n.ServicoID,
-		PrestadorID: n.PrestadorID,
-		Inicio:      pgtype.Timestamptz{Time: n.Inicio, Valid: true},
-	}
-	if n.Fim != nil {
-		p.Fim = pgtype.Timestamptz{Time: *n.Fim, Valid: true}
-	}
-	a, err := r.q.CriarAgendamento(ctx, p)
-	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "23P01" {
-		return a, ErrHorarioIndisponivel
-	}
 	return a, naoEncontrado(err)
 }

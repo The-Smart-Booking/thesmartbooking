@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
@@ -82,71 +81,6 @@ func (h *Handlers) listarAgendamentos(w http.ResponseWriter, r *http.Request) {
 			a.Inicio.Time.UTC(), a.Fim.Time.UTC(), a.Status, a.ValorCentavos}
 	}
 	responderJSON(w, http.StatusOK, out)
-}
-
-const duracaoMaxima = 24 * time.Hour // a mesma da duração do serviço (guia, §005)
-
-// criarAgendamento: POST /api/agendamentos {cliente_id, inicio, fim?}, datas em
-// RFC 3339. Sem fim, vale a duração do serviço. Prestador e serviço são os fixos
-// da Fatia 1; o preço vem do serviço, nunca do corpo.
-func (h *Handlers) criarAgendamento(w http.ResponseWriter, r *http.Request) {
-	var in struct {
-		ClienteID string `json:"cliente_id"`
-		Inicio    string `json:"inicio"`
-		Fim       string `json:"fim"`
-	}
-	if !lerJSON(w, r, &in) {
-		return
-	}
-	clienteID, err := uuid.Parse(in.ClienteID)
-	if err != nil {
-		campoInvalido(w, "cliente_id", "Informe o cliente.")
-		return
-	}
-	if in.Inicio == "" {
-		campoInvalido(w, "inicio", "Informe o início.")
-		return
-	}
-	inicio, ok := lerData(w, in.Inicio, "inicio")
-	if !ok {
-		return
-	}
-	n := storage.NovoAgendamento{ClienteID: clienteID, ServicoID: h.ServicoID, PrestadorID: h.PrestadorID, Inicio: inicio}
-	if in.Fim != "" {
-		fim, ok := lerData(w, in.Fim, "fim")
-		if !ok {
-			return
-		}
-		if !fim.After(inicio) || fim.Sub(inicio) > duracaoMaxima {
-			campoInvalido(w, "fim", "O fim deve ser depois do início, em até 24 horas.")
-			return
-		}
-		n.Fim = &fim
-	}
-
-	tx := h.Tx(r)
-	// Cliente antes, para dizer qual campo falhou: outro tenant ou removido = 404.
-	c, err := storage.NovoClientesRepo(tx).Buscar(r.Context(), h.TenantID, clienteID)
-	if errors.Is(err, storage.ErrNaoEncontrado) {
-		responderErro(w, http.StatusNotFound, CodigoNaoEncontrado, "Cliente não encontrado.", map[string]any{"campo": "cliente_id"})
-		return
-	}
-	if err != nil {
-		responderErroInterno(w, r, err)
-		return
-	}
-	a, err := storage.NovoAgendamentosRepo(tx).Criar(r.Context(), h.TenantID, n)
-	switch {
-	case errors.Is(err, storage.ErrHorarioIndisponivel):
-		responderErro(w, http.StatusConflict, CodigoConflitoHorario, "Já existe um agendamento nesse horário.", map[string]any{"prestador_id": h.PrestadorID})
-	case errors.Is(err, storage.ErrNaoEncontrado):
-		responderErro(w, http.StatusNotFound, CodigoNaoEncontrado, "Prestador ou serviço indisponível.", nil)
-	case err != nil:
-		responderErroInterno(w, r, err)
-	default:
-		responderJSON(w, http.StatusCreated, agendamentoJSON{a.ID, a.ClienteID, c.Nome, a.ServicoID, a.PrestadorID,
-			a.Inicio.Time.UTC(), a.Fim.Time.UTC(), a.Status, a.ValorCentavos})
-	}
 }
 
 // lerData lê uma data RFC 3339 (ISO 8601 com fuso). Vazia devolve o zero. Em
