@@ -22,11 +22,33 @@ superfície, e a cor aparece só em ação, seleção e exceção.
    atual à esquerda, busca e conta à direita.
 7. O conteúdo centraliza em até **1040 px**.
 8. Escuro sem brilho, sombra ou degradê: as superfícies sobem de tom.
+9. **Mobile first.** O CSS parte do celular (390 px) e cresce com `@media (min-width: …)`.
+   Toda tela é desenhada e testada primeiro no celular.
+
+## Estrutura
+
+| | Celular (até 1023 px) | Desktop (1024 px ou mais) |
+|---|---|---|
+| Menu | Gaveta de 304 px (`<dialog>` modal) aberta pelo botão de menu; logo e "Fechar" no topo | Menu lateral fixo de 232 px em `nav`; logo (símbolo 28, nome 18) no topo |
+| Top-bar | 56 px: menu, título (16/500), busca e conta | 64 px: título (15/500) à esquerda, busca e conta à direita |
+| Ação principal | Botão flutuante de 56 px, raio 16, no canto inferior direito | Botão primário no cabeçalho da página |
+| Conteúdo | padding 16 × 20 | padding 24 × 40, centralizado em até 1040 px |
+
+- O **título da página** fica na top-bar, como trilha ("Agenda › Novo agendamento"),
+  e não se repete dentro da página.
+- O menu mostra só as telas que existem: cada item entra com o card da sua tela.
+- Empresa ativa, busca e conta entram com os seus cards (sessão na Fatia 2).
+- Menu recolhido (72 px, só ícones): quando o calendário da 7.1 precisar de espaço.
+- **Tema:** seletor Sistema · Claro · Escuro (segmento) no rodapé do menu lateral e
+  da gaveta, onde vai ficar a conta; quando ela chegar, o seletor vai para o menu
+  dela. Padrão Sistema (`prefers-color-scheme`). A escolha fica no `localStorage`
+  e é aplicada em `<html data-tema>` antes do React montar, para não piscar.
 
 ## Tokens de cor
 
-Mesmo nome nos dois temas. No código viram variáveis CSS (`--fundo`, `--marca`...), e
-o tema escuro entra por `prefers-color-scheme: dark`.
+Mesmo nome nos dois temas. No código viram variáveis CSS (`--fundo`, `--marca`...)
+com `light-dark(claro, escuro)`: o `color-scheme` do `<html>` escolhe o lado (sistema,
+ou o tema forçado pelo seletor).
 
 | Token | Claro | Escuro | Uso |
 |---|---|---|---|
@@ -55,11 +77,13 @@ Foco: anel de 3 px em `destaque` com transparência (`rgba(29,79,145,.22)` no cl
 
 ## Tipografia
 
-**Sora** só no logo, título de página e número de destaque. **Inter** no resto.
+**Sora** só no logo, título de tela sem top-bar (entrar) e número de destaque.
+**Inter** no resto.
 
 | Papel | Fonte | Tamanho / altura |
 |---|---|---|
-| Título de página | Sora 600 | 24 / 32, espaçamento −2% |
+| Título de página (top-bar) | Inter 500 | 15 / 24 no desktop, 16 / 24 no celular |
+| Título de tela sem top-bar | Sora 600 | 24 / 32, espaçamento −2% |
 | Número de destaque (dinheiro) | Sora | 28 |
 | Título de seção | Inter 600 | 15 / 22 |
 | Texto e controles | Inter 400 (500 em controle) | 14 / 20 |
@@ -107,7 +131,10 @@ pílula de 60 × 22 no lugar do ponto central e do da direita: uma semana vista 
 com um horário reservado. Nome em Sora minúsculo, colado, `smart` 300 + `booking` 700,
 espaçamento −3%.
 
-- Pílula sempre em `marca`, em qualquer fundo. Pontos em marinho no claro e branco no escuro.
+- Pílula sempre em `marca`, em qualquer fundo. Pontos em marinho sobre fundo claro e
+  brancos sobre fundo escuro, inclusive no menu lateral e na gaveta (`nav`).
+- Favicon (aba do navegador): o ícone de app, isto é, fundo marinho com canto de 23%
+  e o símbolo a 58% do quadro, com pontos brancos. Lê em aba clara e escura.
 - Tamanhos: 16 (aba), 24 (barra do celular), 28 (menu lateral, nome a 18, 8 px entre os
   dois), 48 (entrar, versão empilhada com nome a 24).
 - Não pode: girar a grade, mudar a pílula de linha, pílula em âmbar ou vermelho (são
@@ -131,8 +158,8 @@ Boards do canvas e o card que realiza cada um.
 
 **Fatia 1:** a lista de `/agendamentos` (1.10) é provisória, e o calendário da 7.1
 a substitui. O formulário de `/agendamentos/novo` (1.11) não tem board: usa os
-componentes acima (campos, botão primário, aviso de erro para o 409). O menu lateral e a
-top-bar completa entram quando houver mais telas do que as duas rotas atuais.
+componentes acima (campos, botão primário, aviso de erro para o 409). A estrutura
+(menu, top-bar, gaveta, tema) já vale desde a 1.10, com o menu só com a Agenda.
 
 ## Acessibilidade
 
