@@ -54,7 +54,8 @@ func comBanco(t *testing.T, tenant uuid.UUID) (http.Handler, pgx.Tx) {
 	if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1, true)", tenant.String()); err != nil {
 		t.Fatal(err)
 	}
-	return rotas(&Handlers{TenantID: tenant, Tx: func(*http.Request) pgx.Tx { return tx }}), tx
+	return rotas(&Handlers{TenantID: tenant, Tx: func(*http.Request) pgx.Tx { return tx },
+		PrestadorID: seedPrestador, ServicoID: seedServicoAlfa}), tx
 }
 
 // semBanco monta as rotas para testes de validação: tocar no banco é falha.
