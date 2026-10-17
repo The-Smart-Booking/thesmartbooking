@@ -32,7 +32,8 @@ func main() {
 	defer pool.Close()
 
 	mux := http.NewServeMux()
-	(&api.Handlers{TenantID: cfg.TenantFixo, Tx: api.TxDaRequisicao}).Rotas(mux)
+	(&api.Handlers{TenantID: cfg.TenantFixo, Tx: api.TxDaRequisicao,
+		PrestadorID: cfg.PrestadorFixo, ServicoID: cfg.ServicoFixo}).Rotas(mux)
 	// Toda requisição numa transação com o tenant; na Fatia 2 ele vem da sessão.
 	tenant := func(*http.Request) uuid.UUID { return cfg.TenantFixo }
 	addr := ":" + cfg.PortaHTTP
