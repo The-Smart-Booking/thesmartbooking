@@ -8,6 +8,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..600&family=Sora:wght@300;600;700&display=swap" />
     <title>Smart Booking</title>
+    <!-- Tema salvo (seletor do menu) antes do primeiro desenho, para não piscar o claro. -->
+    <script>
+      try {
+        const t = localStorage.getItem("tema");
+        if (t === "claro" || t === "escuro") document.documentElement.dataset.tema = t;
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

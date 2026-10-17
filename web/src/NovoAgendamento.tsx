@@ -1,5 +1,6 @@
+// O formulário entra na 1.11.
 function NovoAgendamento() {
-  return <h1>Novo agendamento</h1>;
+  return <p className="secundario">Em construção.</p>;
 }
 
 export default NovoAgendamento;
