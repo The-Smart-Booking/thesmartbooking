@@ -63,12 +63,16 @@ func TestTransacaoMesmaConexaoTenantsDiferentes(t *testing.T) {
 		}
 	}))
 
-	requisicao(t, h, seedAlfa)
+	if w := requisicao(t, h, seedAlfa); w.Code != http.StatusOK {
+		t.Fatalf("requisição do Alfa: %d %s", w.Code, w.Body)
+	}
 	pidAlfa := pid
 	if !slices.Equal(tenants, []uuid.UUID{seedAlfa}) {
 		t.Errorf("requisição do Alfa viu os tenants %v", tenants)
 	}
-	requisicao(t, h, seedBeta)
+	if w := requisicao(t, h, seedBeta); w.Code != http.StatusOK {
+		t.Fatalf("requisição do Beta: %d %s", w.Code, w.Body)
+	}
 	if pid != pidAlfa {
 		t.Fatalf("conexões diferentes (%d e %d): o teste não provaria nada", pidAlfa, pid)
 	}
