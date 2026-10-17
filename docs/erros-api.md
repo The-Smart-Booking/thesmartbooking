@@ -68,3 +68,4 @@ responderErroInterno(w, r, err) // loga err, responde 500 genérico
 ```
 
 Nunca passe `err.Error()` como mensagem: erros do Postgres/pgx vão só para o log.
+
