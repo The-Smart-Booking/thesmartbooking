@@ -16,3 +16,20 @@ ORDER BY a.inicio;
 -- name: BuscarAgendamento :one
 SELECT * FROM agendamentos
 WHERE tenant_id = $1 AND id = $2;
+
+-- Uma instrução só (1.5): valor_centavos copiado do serviço, nunca do payload;
+-- prestador só com membership ativo e serviço só ativo, senão zero linhas. Sem fim,
+-- inicio + duração do serviço. Sobreposição fica com a constraint sem_sobreposicao
+-- (23P01): checar antes em Go abre condição de corrida.
+-- name: CriarAgendamento :one
+INSERT INTO agendamentos (tenant_id, cliente_id, servico_id, prestador_id, inicio, fim, valor_centavos)
+SELECT s.tenant_id, @cliente_id::uuid AS cliente_id, s.id, m.usuario_id,
+       sqlc.arg('inicio')::timestamptz AS inicio,
+       COALESCE(sqlc.narg('fim')::timestamptz,
+                sqlc.arg('inicio')::timestamptz + s.duracao_minutos * interval '1 minute') AS fim,
+       s.preco_centavos
+FROM servicos s
+JOIN memberships m
+  ON m.tenant_id = s.tenant_id AND m.usuario_id = @prestador_id AND m.removido_em IS NULL
+WHERE s.tenant_id = @tenant_id AND s.id = @servico_id AND s.ativo
+RETURNING *;
