@@ -137,6 +137,21 @@ func TestTransacaoCommitERollback(t *testing.T) {
 	}
 }
 
+// COMMIT que falha (tx abortada por SQL inválido) vira 500, mesmo com o handler
+// tendo respondido 201, e sem os cabeçalhos que ele setou.
+func TestTransacaoFalhaNoCommitResponde500(t *testing.T) {
+	h := ComTransacao(storage.NovoStore(poolDeUmaConexao(t)), tenantDoCabecalho, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		TxDaRequisicao(r).Exec(r.Context(), "SELECT * FROM tabela_que_nao_existe")
+		w.Header().Set("Location", "/api/clientes/x")
+		responderJSON(w, http.StatusCreated, nil)
+	}))
+	w := requisicao(t, h, seedAlfa)
+	exigirErro(t, w, http.StatusInternalServerError, CodigoErroInterno)
+	if l := w.Header().Get("Location"); l != "" {
+		t.Errorf("500 com o Location do handler: %q", l)
+	}
+}
+
 // Banco fora do ar: o BEGIN falha e a resposta é 500 no formato padrão.
 func TestTransacaoSemBancoResponde500(t *testing.T) {
 	pool, err := pgxpool.New(context.Background(), "postgres://app_user@127.0.0.1:1/x?connect_timeout=1")
