@@ -19,6 +19,9 @@ var (
 	seedBeta        = uuid.MustParse("22222222-2222-2222-2222-222222222222")
 	seedClienteAlfa = uuid.MustParse("11111111-0004-0000-0000-000000000001")
 	seedClienteBeta = uuid.MustParse("22222222-0004-0000-0000-000000000001")
+	seedServicoAlfa = uuid.MustParse("11111111-0005-0000-0000-000000000001") // SERVICO_FIXO
+	seedAdminAlfa   = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	seedPrestador   = uuid.MustParse("cccccccc-cccc-cccc-cccc-cccccccccccc") // PRESTADOR_FIXO
 )
 
 // urlDoBanco devolve a DATABASE_URL (app_user). Sem ela, pula; no CI, falha.

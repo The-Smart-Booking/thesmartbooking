@@ -24,6 +24,7 @@ type Handlers struct {
 func (h *Handlers) Rotas(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/clientes", h.criarCliente)
 	mux.HandleFunc("GET /api/clientes", h.listarClientes)
+	mux.HandleFunc("GET /api/agendamentos", h.listarAgendamentos)
 }
 
 const limiteCorpo = 1 << 20 // 1 MiB
