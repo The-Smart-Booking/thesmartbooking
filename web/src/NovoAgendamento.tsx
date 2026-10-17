@@ -96,14 +96,8 @@ function NovoAgendamento() {
       </form>
     );
 
-  return (
-    <>
-      <div className="cabecalho">
-        <h1>Novo agendamento</h1>
-      </div>
-      {conteudo}
-    </>
-  );
+  // O título ("Agenda › Novo agendamento") fica na top-bar (App.tsx).
+  return conteudo;
 }
 
 export default NovoAgendamento;
