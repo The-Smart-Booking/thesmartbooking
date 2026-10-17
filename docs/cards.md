@@ -6,7 +6,7 @@ quando cards forem criados ou apagados (uma fatia por vez), num PR `docs`.
 
 Dependências copiadas do "Depende de" de cada issue — o corpo da issue é o contrato.
 
-Conferido em 02/10/2026.
+Conferido em 17/10/2026.
 
 ## Mudanças de 02/10/2026 (backlog v2.2)
 
@@ -25,8 +25,7 @@ dependências não mudaram; mudou o corpo destes cards, já editado no board
 | #53 | 1.6 | `prestador_id` opcional, sem regra de sessão (fica na 2.7) |
 | #57 | 1.10 | Continua lista simples; o calendário semanal é a 7.1 |
 
-Itens novos do backlog, sem card ainda: 2.16 a 2.20, 5.8, 6.5a e 6.5b (a 6.5 foi
-dividida) e 7.1 a 7.7 (Fatia 7 Acompanhar). Entregar passou a ser a Fatia 8 (8.1
+Itens novos do backlog, sem card ainda: 5.8, 6.5a e 6.5b (a 6.5 foi dividida) e 7.1 a 7.7 (Fatia 7 Acompanhar). Entregar passou a ser a Fatia 8 (8.1
 a 8.7).
 
 ## Fatia 0 — Fundação
@@ -68,7 +67,40 @@ Itens 0.1 a 0.6 não têm card: as issues da numeração antiga foram apagadas.
 | #57 | 1.10 | Tela de listagem de agendamentos | M | frontend | 1.6, 1.9 |
 | #58 | 1.11 | Formulário de novo agendamento (data e hora digitadas, sem slots) | M | frontend | 1.4, 1.5, 1.9 |
 | #59 | 1.12 | Estados de carregamento e exibição de erro | M | frontend | 1.9, 1.10, 1.11 |
+| #107 | 1.13 | 404 e 405 de rota inexistente no formato da API, sem abrir transação | P | backend | 1.3, 1.7 |
+| #108 | 1.14 | Timeouts do servidor HTTP e verificação do banco na subida | P | backend | 1.3 |
 
 **Prioridade:** 1.1 -> 1.2 -> 1.3 -> 1.4 -> 1.6 -> 1.5 -> 1.10 -> 1.11 -> 1.12
 
 1.7 -> 1.8 -> 1.9 (em paralelo, junto com o fim da Fatia 0). A 1.6 vem antes da 1.5 porque destrava a 1.10.
+
+1.13 e 1.14 são dívidas do servidor HTTP da 1.3, fora do backlog.
+
+## Fatia 2 — Entrar
+
+| Card | Item | Título | Tam. | Área | Depende de |
+|---|---|---|---|---|---|
+| #111 | 2.1 | Hash de senha com Argon2id | P | backend | — |
+| #112 | 2.2 | POST /signup: cria usuário + tenant (com criado_por) + membership administrador na mesma transação | M | backend, banco | 2.1, 2.15 |
+| #113 | 2.3 | POST /login com emissão de sessão | M | backend | 2.1, 2.14, 2.15 |
+| #114 | 2.4 | POST /logout e invalidação | P | backend | 2.3, 2.5 |
+| #115 | 2.5 | Middleware de autenticação | M | backend | 2.14, 2.3 |
+| #116 | 2.6 | Middleware de tenant: valida membership e injeta app.tenant_id | G | backend, banco, **caminho crítico** | 2.5, 1.3 |
+| #117 | 2.7 | Middleware de autorização: papéis administrador/prestador e Escopo por prestador | M | backend | 2.6, 1.6 |
+| #118 | 2.8 | Rate limit no endpoint de login | P | backend | 2.3 |
+| #119 | 2.9 | GET /me com os tenants do usuário | P | backend | 2.5 |
+| #120 | 2.10 | Telas de cadastro e login | M | frontend | 2.2, 2.3, 1.9 |
+| #121 | 2.11 | Layout autenticado com indicação do tenant ativo | M | frontend | 2.9, 2.10 |
+| #122 | 2.12 | Remover TENANT_FIXO e PRESTADOR_FIXO do config | P | backend | 1.1, 2.6, 2.7 |
+| #123 | 2.13 | Teste automatizado de isolamento entre tenants em todos os endpoints | M | backend | 2.2, 2.3, 2.6, 0.17 |
+| #124 | 2.14 | Migration: sessoes | P | banco | 0.9 |
+| #125 | 2.15 | Normalizar e-mail (trim + minúsculas) no cadastro e no login | P | backend | — |
+| #126 | 2.16 | Teste: prestador não lê agendamento de outro prestador do mesmo tenant | M | backend | 2.2, 2.3, 2.7, 0.17 |
+| #127 | 2.17 | Migration: convites (papel administrador ou prestador) | P | banco | 0.9 |
+| #128 | 2.18 | POST e GET /convites: administrador convida administrador ou prestador | M | backend | 2.17, 2.7 |
+| #129 | 2.19 | Aceite do convite (endpoint e tela), reativando membership removido | M | backend, frontend | 2.17, 2.5, 2.10 |
+| #130 | 2.20 | Tela de gestão de prestadores: listar membros e convidar | M | frontend | 2.18, 2.11 |
+
+A 2.14 vem antes da 2.3: a sessão mora na tabela `sessoes`. A fatia fecha quando 2.13 e 2.16 passam no CI.
+
+Com decisão em aberto no corpo da issue (pare e pergunte antes de começar): 2.2, 2.3, 2.8, 2.9, 2.18, 2.19 e 2.20.
