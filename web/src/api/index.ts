@@ -1,8 +1,23 @@
 // Funções por recurso. Contrato de JSON definido aqui (colunas das migrations
 // 00004 e 00007); os handlers das cards 1.4, 1.5 e 1.6 seguem este formato.
-import { get, post } from "./http";
+import { ApiError, ErroRede, get, post } from "./http";
 
-export { ApiError, ErroRede } from "./http";
+export { ApiError, ErroRede };
+
+// Só os códigos em que um texto fixo diz mais que a mensagem da API; nos outros
+// (requisicao_invalida, nao_encontrado, desconhecidos) a mensagem da API já diz o campo.
+// Map, não objeto: um codigo como "constructor" não pode cair no protótipo.
+const mensagens = new Map([
+  ["conflito_horario", "Esse horário acabou de ser ocupado. Escolha outro."],
+  ["erro_interno", "Algo deu errado do nosso lado. Tente de novo em instantes."],
+]);
+
+/** Texto em português para mostrar ao usuário, decidido pelo `codigo` (docs/erros-api.md). */
+export function mensagemDeErro(e: unknown): string {
+  if (e instanceof ErroRede) return "Não foi possível falar com o servidor. Tente de novo em instantes.";
+  if (e instanceof ApiError) return mensagens.get(e.codigo) ?? e.mensagem;
+  return "Erro inesperado. Tente de novo.";
+}
 
 /** Datas em ISO 8601 UTC com offset, ex.: "2026-10-09T13:00:00Z". */
 export type Agendamento = {
