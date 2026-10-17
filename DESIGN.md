@@ -18,8 +18,10 @@ superfície, e a cor aparece só em ação, seleção e exceção.
 4. **Azul em ação e seleção; verde na marca, no sucesso e no hover.** O resto é marinho
    e cinza.
 5. A **nav** (menu lateral) é a única superfície de cor sólida.
-6. **Top-bar**: branca com linha fina embaixo no claro, na cor da nav no escuro. Página
-   atual à esquerda, busca e conta à direita.
+6. **Top-bar** em `superficie` com linha fina embaixo: branca no claro e um tom acima
+   do fundo no escuro, para se destacar dele nos dois temas (o canvas usava a cor da
+   nav no escuro; mudou em 17/10/2026). Página atual à esquerda, tema, busca e conta à
+   direita.
 7. O conteúdo centraliza em até **1040 px**.
 8. Escuro sem brilho, sombra ou degradê: as superfícies sobem de tom.
 9. **Mobile first.** O CSS parte do celular (390 px) e cresce com `@media (min-width: …)`.
@@ -30,7 +32,7 @@ superfície, e a cor aparece só em ação, seleção e exceção.
 | | Celular (até 1023 px) | Desktop (1024 px ou mais) |
 |---|---|---|
 | Menu | Gaveta de 304 px (`<dialog>` modal) aberta pelo botão de menu; logo e "Fechar" no topo | Menu lateral fixo de 232 px em `nav`; logo (símbolo 28, nome 18) no topo |
-| Top-bar | 56 px: menu, título (16/500), busca e conta | 64 px: título (15/500) à esquerda, busca e conta à direita |
+| Top-bar | 56 px: menu, título (16/500), tema, busca e conta | 64 px: título (15/500) à esquerda; tema, busca e conta à direita |
 | Ação principal | Botão flutuante de 56 px, raio 16, no canto inferior direito | Botão primário no cabeçalho da página |
 | Conteúdo | padding 16 × 20 | padding 24 × 40, centralizado em até 1040 px |
 
@@ -39,16 +41,16 @@ superfície, e a cor aparece só em ação, seleção e exceção.
 - O menu mostra só as telas que existem: cada item entra com o card da sua tela.
 - Empresa ativa, busca e conta entram com os seus cards (sessão na Fatia 2).
 - Menu recolhido (72 px, só ícones): quando o calendário da 7.1 precisar de espaço.
-- **Tema:** seletor Sistema · Claro · Escuro (segmento) no rodapé do menu lateral e
-  da gaveta, onde vai ficar a conta; quando ela chegar, o seletor vai para o menu
-  dela. Padrão Sistema (`prefers-color-scheme`). A escolha fica no `localStorage`
+- **Tema:** botão redondo de 36 px (`afundado`) no canto direito da top-bar, com o
+  ícone do tema em uso (sol ou lua); o clique alterna entre claro e escuro. Sem
+  escolha, segue o sistema (`prefers-color-scheme`). A escolha fica no `localStorage`
   e é aplicada em `<html data-tema>` antes do React montar, para não piscar.
 
 ## Tokens de cor
 
 Mesmo nome nos dois temas. No código viram variáveis CSS (`--fundo`, `--marca`...)
 com `light-dark(claro, escuro)`: o `color-scheme` do `<html>` escolhe o lado (sistema,
-ou o tema forçado pelo seletor).
+ou o tema escolhido no botão da top-bar).
 
 | Token | Claro | Escuro | Uso |
 |---|---|---|---|
