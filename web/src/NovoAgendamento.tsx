@@ -1,26 +1,30 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { criarAgendamento, listarClientes, type Cliente } from "./api";
+import { criarAgendamento, listarClientes, mensagemDeErro, type Cliente } from "./api";
 import { diaLocal } from "./datas";
+import { Carregando, MensagemErro, Vazio } from "./Estados";
 
 // Hora digitada, sem slots: os horários livres entram na Fatia 6.
 function NovoAgendamento() {
   const navigate = useNavigate();
   const [clientes, setClientes] = useState<Cliente[]>();
   const [erroClientes, setErroClientes] = useState("");
+  const [tentativa, setTentativa] = useState(0);
   const [clienteId, setClienteId] = useState("");
   const [data, setData] = useState(() => diaLocal(new Date()));
   const [hora, setHora] = useState("");
   const [duracao, setDuracao] = useState("30");
   const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    listarClientes().then(setClientes, (e: Error) => setErroClientes(e.message));
-  }, []);
+    listarClientes().then(setClientes, (e) => setErroClientes(mensagemDeErro(e)));
+  }, [tentativa]);
 
   async function salvar(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); // os campos têm required: o navegador barra o envio incompleto antes daqui
     setErro("");
+    setEnviando(true); // o botão desabilitado barra o segundo clique: sem POST duplicado
     // "AAAA-MM-DDTHH:MM" sem fuso é hora local; toISOString manda em UTC.
     const inicio = new Date(`${data}T${hora}`);
     const fim = new Date(inicio.getTime() + Number(duracao) * 60_000);
@@ -28,14 +32,24 @@ function NovoAgendamento() {
       await criarAgendamento({ cliente_id: clienteId, inicio: inicio.toISOString(), fim: fim.toISOString() });
       navigate("/agendamentos");
     } catch (e) {
-      setErro((e as Error).message); // 409 inclusive: o formulário continua preenchido
+      setErro(mensagemDeErro(e)); // 409 inclusive: o formulário continua preenchido
+      setEnviando(false);
     }
   }
 
   let conteudo;
-  if (erroClientes) conteudo = <p className="erro" role="alert">{erroClientes}</p>;
-  else if (!clientes) conteudo = <p role="status">Carregando…</p>;
-  else if (clientes.length === 0) conteudo = <p className="secundario">Nenhum cliente cadastrado ainda.</p>;
+  if (erroClientes)
+    conteudo = (
+      <MensagemErro
+        mensagem={erroClientes}
+        onTentarDeNovo={() => {
+          setErroClientes("");
+          setTentativa((t) => t + 1);
+        }}
+      />
+    );
+  else if (!clientes) conteudo = <Carregando />;
+  else if (clientes.length === 0) conteudo = <Vazio>Nenhum cliente cadastrado ainda.</Vazio>;
   else
     conteudo = (
       <form className="cartao formulario" onSubmit={salvar}>
@@ -73,14 +87,10 @@ function NovoAgendamento() {
             />
           </div>
         </div>
-        {erro && (
-          <p className="erro" role="alert">
-            {erro}
-          </p>
-        )}
+        {erro && <MensagemErro mensagem={erro} />}
         <div>
-          <button className="botao" type="submit">
-            Salvar
+          <button className="botao" type="submit" disabled={enviando}>
+            {enviando ? "Salvando…" : "Salvar"}
           </button>
         </div>
       </form>

@@ -1,40 +1,42 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { listarAgendamentos, type Agendamento } from "./api";
+import { listarAgendamentos, mensagemDeErro, type Agendamento } from "./api";
+import { Carregando, MensagemErro, Vazio } from "./Estados";
 import { diaLocal, formatarData, formatarHora, inicioDoDia, minutosEntre, somarDias } from "./datas";
 
-// Resultado da última busca, marcado com o período que o gerou: enquanto ele não
-// bate com o período atual, a tela está carregando (sem setState síncrono no efeito).
-type Resultado = { periodo: string } & ({ agendamentos: Agendamento[] } | { erro: string });
+// Resultado da última busca, marcado com a busca que o gerou (período + tentativa):
+// enquanto ele não bate com a atual, a tela está carregando (sem setState síncrono no efeito).
+type Resultado = { busca: string } & ({ agendamentos: Agendamento[] } | { erro: string });
 
 function Agendamentos() {
   // Mesmo padrão da API (7 dias a partir de hoje), mas com "hoje" no fuso local.
   const [de, setDe] = useState(() => diaLocal(new Date()));
   const [ate, setAte] = useState(() => somarDias(diaLocal(new Date()), 6));
+  const [tentativa, setTentativa] = useState(0);
   const [resultado, setResultado] = useState<Resultado>();
 
-  const periodo = `${de}/${ate}`;
+  const busca = `${de}/${ate}/${tentativa}`;
   const invalido = !de || !ate ? "Escolha as duas datas." : ate < de ? "A data final é anterior à inicial." : "";
 
   useEffect(() => {
     if (invalido) return;
-    let atual = true; // descarta a resposta de um período que já mudou
+    let atual = true; // descarta a resposta de uma busca que já mudou
     // "Até" inclui o dia inteiro: a API usa [de, ate), então vai a meia-noite seguinte.
     listarAgendamentos(inicioDoDia(de), inicioDoDia(somarDias(ate, 1))).then(
-      (agendamentos) => atual && setResultado({ periodo, agendamentos }),
-      (e: Error) => atual && setResultado({ periodo, erro: e.message }),
+      (agendamentos) => atual && setResultado({ busca, agendamentos }),
+      (e) => atual && setResultado({ busca, erro: mensagemDeErro(e) }),
     );
     return () => {
       atual = false;
     };
-  }, [de, ate, periodo, invalido]);
+  }, [de, ate, busca, invalido]);
 
   let conteudo;
-  if (invalido) conteudo = <p className="erro">{invalido}</p>;
-  else if (resultado?.periodo !== periodo) conteudo = <p role="status">Carregando…</p>;
-  else if ("erro" in resultado) conteudo = <p className="erro" role="alert">{resultado.erro}</p>;
-  else if (resultado.agendamentos.length === 0)
-    conteudo = <p className="secundario">Nenhum agendamento nesse período.</p>;
+  if (invalido) conteudo = <MensagemErro mensagem={invalido} />;
+  else if (resultado?.busca !== busca) conteudo = <Carregando />;
+  else if ("erro" in resultado)
+    conteudo = <MensagemErro mensagem={resultado.erro} onTentarDeNovo={() => setTentativa((t) => t + 1)} />;
+  else if (resultado.agendamentos.length === 0) conteudo = <Vazio>Nenhum agendamento nesse período.</Vazio>;
   else
     conteudo = (
       <ul className="cartao lista">

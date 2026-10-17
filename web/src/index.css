@@ -186,6 +186,11 @@ select:focus-visible {
 }
 
 .erro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
   margin: 0;
   padding: 10px 14px;
   border-radius: 10px;
@@ -253,4 +258,16 @@ select:focus-visible {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
+}
+
+.botao-texto {
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
 }
