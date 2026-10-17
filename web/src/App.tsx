@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link, NavLink, Outlet, useMatches } from "react-router";
 
 // Estrutura do DESIGN.md: celular com top-bar e gaveta (<dialog>), desktop com menu
@@ -7,56 +7,56 @@ import { Link, NavLink, Outlet, useMatches } from "react-router";
 /** handle das rotas (route.ts): o título que aparece na trilha da top-bar. */
 type Handle = { titulo: string };
 
-type Tema = "sistema" | "claro" | "escuro";
-const temas: [Tema, string][] = [
-  ["sistema", "Sistema"],
-  ["claro", "Claro"],
-  ["escuro", "Escuro"],
-];
+type Tema = "claro" | "escuro";
 
-// localStorage pode falhar (aba anônima, cookies bloqueados): aí vale o sistema.
-function lerTema(): Tema {
+// Sem escolha salva, vale o sistema. localStorage pode falhar (aba anônima): idem.
+function lerTema(): Tema | null {
   try {
     const t = localStorage.getItem("tema");
     if (t === "claro" || t === "escuro") return t;
   } catch {
     /* segue o sistema */
   }
-  return "sistema";
+  return null;
 }
+
+// Tema do sistema, acompanhando a troca enquanto a página está aberta.
+const escuroNoSistema = window.matchMedia("(prefers-color-scheme: dark)");
+const assinarSistema = (avisar: () => void) => {
+  escuroNoSistema.addEventListener("change", avisar);
+  return () => escuroNoSistema.removeEventListener("change", avisar);
+};
 
 function App() {
   const gaveta = useRef<HTMLDialogElement>(null);
-  const [tema, setTema] = useState(lerTema);
+  const [escolhido, setEscolhido] = useState(lerTema);
+  const sistemaEscuro = useSyncExternalStore(assinarSistema, () => escuroNoSistema.matches);
+  const tema: Tema = escolhido ?? (sistemaEscuro ? "escuro" : "claro");
   const trilha = useMatches().filter((m) => (m.handle as Handle | undefined)?.titulo);
   const titulo = (trilha.at(-1)?.handle as Handle | undefined)?.titulo;
 
-  // O index.html já aplicou o tema salvo antes de montar; aqui só acompanha a troca.
-  useEffect(() => {
-    const raiz = document.documentElement;
-    if (tema === "sistema") delete raiz.dataset.tema;
-    else raiz.dataset.tema = tema;
+  function trocarTema() {
+    const novo: Tema = tema === "escuro" ? "claro" : "escuro";
+    setEscolhido(novo);
+    document.documentElement.dataset.tema = novo; // o index.html faz o mesmo ao carregar
     try {
-      if (tema === "sistema") localStorage.removeItem("tema");
-      else localStorage.setItem("tema", tema);
+      localStorage.setItem("tema", novo);
     } catch {
       /* sem localStorage, a escolha vale só até recarregar */
     }
-  }, [tema]);
+  }
 
   useEffect(() => {
     document.title = titulo ? `${titulo} · Smart Booking` : "Smart Booking";
   }, [titulo]);
 
   const fechar = () => gaveta.current?.close();
-  const seletor = <SeletorTema tema={tema} onChange={setTema} />;
 
   return (
     <div className="app">
       <aside className="lateral">
         <Logo />
         <Menu />
-        {seletor}
       </aside>
 
       <dialog
@@ -75,7 +75,6 @@ function App() {
           </button>
         </div>
         <Menu onNavegar={fechar} />
-        {seletor}
       </dialog>
 
       <div>
@@ -101,6 +100,7 @@ function App() {
               ),
             )}
           </nav>
+          <BotaoTema tema={tema} onClick={trocarTema} />
         </header>
         <main className="conteudo">
           <Outlet />
@@ -150,19 +150,27 @@ function Menu({ onNavegar }: { onNavegar?: () => void }) {
   );
 }
 
-/** Segmento Sistema · Claro · Escuro com rádios nativos: setas, foco e leitor de tela de graça. */
-function SeletorTema({ tema, onChange }: { tema: Tema; onChange: (t: Tema) => void }) {
-  const nome = useId(); // dois seletores na página (lateral e gaveta): cada grupo com o seu name
+/** Botão redondo da top-bar: o ícone mostra o tema em uso; o clique troca. */
+function BotaoTema({ tema, onClick }: { tema: Tema; onClick: () => void }) {
+  const rotulo = tema === "escuro" ? "Tema escuro. Mudar para o claro" : "Tema claro. Mudar para o escuro";
   return (
-    <fieldset className="tema">
-      <legend>Tema</legend>
-      {temas.map(([valor, rotulo]) => (
-        <label key={valor}>
-          <input type="radio" name={nome} value={valor} checked={tema === valor} onChange={() => onChange(valor)} />
-          {rotulo}
-        </label>
-      ))}
-    </fieldset>
+    <button type="button" className="botao-tema" aria-label={rotulo} title={rotulo} onClick={onClick}>
+      {tema === "escuro" ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="currentColor" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" fill="currentColor" />
+          <path
+            d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
+    </button>
   );
 }
 

@@ -220,54 +220,25 @@ a:hover {
   color: #ffffff;
 }
 
-/* Seletor de tema: segmento do DESIGN.md, com rádios nativos (setas e foco de graça). */
-.tema {
-  display: flex;
-  gap: 2px;
-  margin: auto 0 0;
-  padding: 2px;
+/* Tema: botão redondo no canto direito da top-bar. */
+.botao-tema {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin: 0 4px 0 auto;
+  padding: 0;
   border: none;
-  border-radius: 9px;
-  background: #132a4a;
-}
-
-.tema legend {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
-.tema label {
-  position: relative;
-  flex: 1;
-  height: 30px;
-  border-radius: 7px;
-  color: #a9b6c7;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 30px;
-  text-align: center;
+  border-radius: 999px;
+  background: var(--afundado);
+  color: var(--texto);
   cursor: pointer;
 }
 
-.tema input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.tema label:has(:checked) {
-  background: #1c3354;
-  color: #ffffff;
-}
-
-.tema label:has(:focus-visible) {
-  outline: 2px solid #8fb1e6;
-  outline-offset: 1px;
+.botao-tema:hover {
+  color: var(--hover);
 }
 
 /* Botão primário; na página da Agenda vira flutuante no celular (.novo). */
