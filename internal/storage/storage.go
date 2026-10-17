@@ -3,7 +3,7 @@
 // pelo sqlc (internal/storage/db) não é importado fora daqui.
 //
 // Os repositórios recebem a transação já aberta com set_config('app.tenant_id',
-// ..., true) (helper da 1.3), nunca o pool: pgx.Tx em vez de db.DBTX para o pool
+// ..., true) pelo Store.ComTenant, nunca o pool: pgx.Tx em vez de db.DBTX para o pool
 // não caber no lugar por engano. Os construtores (Novo*Repo) não acessam o banco:
 // a regra (ctx, tenantID, ...) vale para os métodos.
 package storage
@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/The-Smart-Booking/thesmartbooking/internal/storage/db"
 )
@@ -32,6 +33,30 @@ type (
 	BuscarClienteRow  = db.BuscarClienteRow
 	Agendamento       = db.Agendamento
 )
+
+// Store abre as transações com tenant sobre o pool do app_user (DATABASE_URL).
+type Store struct{ pool *pgxpool.Pool }
+
+func NovoStore(pool *pgxpool.Pool) *Store { return &Store{pool} }
+
+// ComTenant roda fn numa transação com set_config('app.tenant_id', ..., true):
+// o tenant morre com a transação e não vaza para quem pegar a conexão depois
+// (guia, armadilha 2). fn com erro ou panic = ROLLBACK; sem erro, COMMIT.
+func (s *Store) ComTenant(ctx context.Context, tenantID uuid.UUID, fn func(tx pgx.Tx) error) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx) // no-op depois do Commit
+
+	if _, err := tx.Exec(ctx, "SELECT set_config('app.tenant_id', $1, true)", tenantID.String()); err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
 
 func naoEncontrado(err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {
