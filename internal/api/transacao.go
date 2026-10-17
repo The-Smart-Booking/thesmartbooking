@@ -49,6 +49,7 @@ func ComTransacao(s *storage.Store, tenant func(*http.Request) uuid.UUID, next h
 			return nil
 		})
 		if err != nil && !errors.Is(err, errRespostaDeErro) {
+			clear(w.Header()) // o 500 não leva Location, Set-Cookie etc. do handler
 			responderErroInterno(w, r, err)
 			return
 		}
@@ -61,7 +62,7 @@ func ComTransacao(s *storage.Store, tenant func(*http.Request) uuid.UUID, next h
 }
 
 // respostaAdiada guarda status e corpo até o fim da transação. Os cabeçalhos vão
-// direto para o w: só são enviados no WriteHeader dele.
+// direto para o w (só saem no WriteHeader dele); no 500, o ComTransacao os limpa.
 type respostaAdiada struct {
 	http.ResponseWriter
 	status int
