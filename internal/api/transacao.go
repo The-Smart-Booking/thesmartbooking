@@ -36,6 +36,9 @@ func ComTransacao(s *storage.Store, tenant func(*http.Request) uuid.UUID, next h
 		err := s.ComTenant(r.Context(), tenant(r), func(tx pgx.Tx) (err error) {
 			defer func() {
 				if p := recover(); p != nil {
+					if p == http.ErrAbortHandler {
+						panic(p) // aborto pedido pelo handler; o ROLLBACK sai no defer do ComTenant
+					}
 					err = fmt.Errorf("panic: %v\n%s", p, debug.Stack())
 				}
 			}()
