@@ -21,10 +21,8 @@ var (
 	seedClienteBeta = uuid.MustParse("22222222-0004-0000-0000-000000000001")
 )
 
-// comBanco monta as rotas sobre uma transação do app_user com set_config(...,
-// true), como fará o middleware da 1.3, desfeita no fim do teste. Sem
-// DATABASE_URL, pula; no CI, falha.
-func comBanco(t *testing.T, tenant uuid.UUID) (http.Handler, pgx.Tx) {
+// urlDoBanco devolve a DATABASE_URL (app_user). Sem ela, pula; no CI, falha.
+func urlDoBanco(t *testing.T) string {
 	t.Helper()
 	url := os.Getenv("DATABASE_URL")
 	if url == "" {
@@ -33,8 +31,15 @@ func comBanco(t *testing.T, tenant uuid.UUID) (http.Handler, pgx.Tx) {
 		}
 		t.Skip("DATABASE_URL não definida: teste de banco pulado")
 	}
+	return url
+}
+
+// comBanco monta as rotas sobre uma transação do app_user com set_config(...,
+// true), como faz o ComTransacao, desfeita no fim do teste.
+func comBanco(t *testing.T, tenant uuid.UUID) (http.Handler, pgx.Tx) {
+	t.Helper()
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, url)
+	conn, err := pgx.Connect(ctx, urlDoBanco(t))
 	if err != nil {
 		t.Fatal(err)
 	}
