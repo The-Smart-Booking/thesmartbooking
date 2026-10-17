@@ -53,20 +53,23 @@ function Agendamentos() {
   return (
     <>
       <div className="cabecalho">
-        <h1>Agendamentos</h1>
-        <Link className="botao" to="/agendamentos/novo">
-          Novo agendamento
+        <div className="filtro">
+          <div>
+            <label htmlFor="de">De</label>
+            <input id="de" type="date" value={de} onChange={(e) => setDe(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="ate">Até</label>
+            <input id="ate" type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
+          </div>
+        </div>
+        {/* Flutuante no celular, botão do cabeçalho no desktop (CSS .novo). */}
+        <Link className="botao novo" to="/agendamentos/novo">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <span>Novo agendamento</span>
         </Link>
-      </div>
-      <div className="filtro">
-        <div>
-          <label htmlFor="de">De</label>
-          <input id="de" type="date" value={de} onChange={(e) => setDe(e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor="ate">Até</label>
-          <input id="ate" type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
-        </div>
       </div>
       {conteudo}
     </>
