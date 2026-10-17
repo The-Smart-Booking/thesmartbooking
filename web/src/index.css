@@ -23,8 +23,6 @@
   --perigo-suave: light-dark(#fbeae8, #2e1a1d);
   --foco: light-dark(rgba(29, 79, 145, 0.22), rgba(91, 139, 214, 0.32));
   --hover: light-dark(#0f6e56, #34a07e);
-  /* Top-bar: branca no claro, na cor da nav no escuro. */
-  --topo: light-dark(#ffffff, #03070f);
 }
 
 :root[data-tema="claro"] {
@@ -83,7 +81,8 @@ a:hover {
   gap: 2px;
   height: 56px;
   padding: 0 8px;
-  background: var(--topo);
+  /* Um tom acima do fundo nos dois temas (branca no claro). */
+  background: var(--superficie);
   border-bottom: 1px solid var(--linha);
 }
 
