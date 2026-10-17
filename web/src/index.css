@@ -1,53 +1,38 @@
-/* Tokens e regras: DESIGN.md. */
+/* Tokens, estrutura e regras: DESIGN.md. Mobile first: a base é o celular, min-width cresce. */
 :root {
-  color-scheme: light;
-  --fundo: #f4f5f2;
-  --superficie: #ffffff;
-  --afundado: #eceeea;
-  --linha: #e1e4df;
-  --linha-forte: #cdd2cb;
-  --texto: #0b1f3a;
-  --texto-2: #5b6878;
-  --texto-3: #97a1ad;
-  --nav: #0b1f3a;
+  /* light-dark(claro, escuro): o color-scheme escolhe o lado. Sem data-tema, segue o sistema. */
+  color-scheme: light dark;
+  --fundo: light-dark(#f4f5f2, #060c17);
+  --superficie: light-dark(#ffffff, #0b1322);
+  --afundado: light-dark(#eceeea, #121c2e);
+  --linha: light-dark(#e1e4df, #1a2538);
+  --linha-forte: light-dark(#cdd2cb, #26334a);
+  --texto: light-dark(#0b1f3a, #e8ecf2);
+  --texto-2: light-dark(#5b6878, #8a96a8);
+  --texto-3: light-dark(#97a1ad, #5a677a);
+  --nav: light-dark(#0b1f3a, #03070f);
   --marca: #0f6e56;
-  --sucesso-suave: #e3f1ec;
-  --destaque: #1d4f91;
-  --destaque-texto: #1d4f91;
-  --agendado: #e8eef7;
-  --sobre-cor: #ffffff;
-  --atencao: #935a00;
-  --atencao-suave: #fcf1dc;
-  --perigo: #b3261e;
-  --perigo-suave: #fbeae8;
-  --foco: rgba(29, 79, 145, 0.22);
-  --hover: #0f6e56;
+  --sucesso-suave: light-dark(#e3f1ec, #0e2e26);
+  --destaque: light-dark(#1d4f91, #5b8bd6);
+  --destaque-texto: light-dark(#1d4f91, #8fb1e6);
+  --agendado: light-dark(#e8eef7, #1a2b48);
+  --sobre-cor: light-dark(#ffffff, #060c17);
+  --atencao: light-dark(#935a00, #e3b062);
+  --atencao-suave: light-dark(#fcf1dc, #2b2214);
+  --perigo: light-dark(#b3261e, #f0908a);
+  --perigo-suave: light-dark(#fbeae8, #2e1a1d);
+  --foco: light-dark(rgba(29, 79, 145, 0.22), rgba(91, 139, 214, 0.32));
+  --hover: light-dark(#0f6e56, #34a07e);
+  /* Top-bar: branca no claro, na cor da nav no escuro. */
+  --topo: light-dark(#ffffff, #03070f);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --fundo: #060c17;
-    --superficie: #0b1322;
-    --afundado: #121c2e;
-    --linha: #1a2538;
-    --linha-forte: #26334a;
-    --texto: #e8ecf2;
-    --texto-2: #8a96a8;
-    --texto-3: #5a677a;
-    --nav: #03070f;
-    --sucesso-suave: #0e2e26;
-    --destaque: #5b8bd6;
-    --destaque-texto: #8fb1e6;
-    --agendado: #1a2b48;
-    --sobre-cor: #060c17;
-    --atencao: #e3b062;
-    --atencao-suave: #2b2214;
-    --perigo: #f0908a;
-    --perigo-suave: #2e1a1d;
-    --foco: rgba(91, 139, 214, 0.32);
-    --hover: #34a07e;
-  }
+:root[data-tema="claro"] {
+  color-scheme: light;
+}
+
+:root[data-tema="escuro"] {
+  color-scheme: dark;
 }
 
 * {
@@ -67,50 +52,8 @@ select {
   font: inherit;
 }
 
-/* Top-bar: branca com linha fina no claro, na cor da nav no escuro. */
-nav {
-  display: flex;
-  gap: 4px;
-  padding: 0 16px;
-  min-height: 56px;
-  align-items: center;
-  background: var(--superficie);
-  border-bottom: 1px solid var(--linha);
-}
-
-@media (prefers-color-scheme: dark) {
-  nav {
-    background: var(--nav);
-  }
-}
-
-nav a {
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: var(--texto-2);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-nav a:hover {
-  color: var(--hover);
-}
-
-nav a.active {
-  color: var(--texto);
-  background: var(--afundado);
-}
-
-main {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 32px 16px;
-}
-
 h1 {
   margin: 0;
-  font: 600 24px/32px Sora, system-ui, sans-serif;
-  letter-spacing: -0.02em;
 }
 
 a {
@@ -126,9 +69,213 @@ a:hover {
   outline-offset: 2px;
 }
 
+/* Estrutura: celular com top-bar e gaveta; desktop com menu lateral fixo. */
+.lateral {
+  display: none;
+}
+
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 56px;
+  padding: 0 8px;
+  background: var(--topo);
+  border-bottom: 1px solid var(--linha);
+}
+
+.trilha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-left: 4px;
+  font-size: 16px;
+  line-height: 24px;
+  white-space: nowrap;
+}
+
+.trilha a {
+  color: var(--texto-2);
+  text-decoration: none;
+}
+
+.trilha h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: inherit;
+  font-weight: 500;
+}
+
+.icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.conteudo {
+  max-width: 1040px;
+  margin: 0 auto;
+  /* Embaixo, espaço para o botão flutuante não cobrir o fim da lista. */
+  padding: 16px 20px 96px;
+}
+
+/* Menu (gaveta e lateral): sempre sobre a nav marinho, nos dois temas. */
+.gaveta,
+.lateral {
+  flex-direction: column;
+  background: var(--nav);
+  color: #ffffff;
+}
+
+.gaveta {
+  width: 304px;
+  max-width: calc(100% - 56px);
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 6px 12px 20px;
+  border: none;
+}
+
+.gaveta[open] {
+  display: flex;
+}
+
+.gaveta::backdrop {
+  background: rgba(3, 7, 15, 0.55);
+}
+
+.gaveta-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding-left: 8px;
+}
+
+.gaveta-topo .icone {
+  color: #a9b6c7;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 17px/1 Sora, system-ui, sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.logo b {
+  font-weight: 700;
+}
+
+.logo span {
+  font-weight: 300;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 16px;
+}
+
+.menu a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: #c6d0dc;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.menu a:hover {
+  background: #132a4a;
+  color: #ffffff;
+}
+
+.menu a:hover svg {
+  color: #34a07e;
+}
+
+.menu a.active {
+  background: #1c3354;
+  color: #ffffff;
+}
+
+/* Seletor de tema: segmento do DESIGN.md, com rádios nativos (setas e foco de graça). */
+.tema {
+  display: flex;
+  gap: 2px;
+  margin: auto 0 0;
+  padding: 2px;
+  border: none;
+  border-radius: 9px;
+  background: #132a4a;
+}
+
+.tema legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.tema label {
+  position: relative;
+  flex: 1;
+  height: 30px;
+  border-radius: 7px;
+  color: #a9b6c7;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 30px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.tema input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tema label:has(:checked) {
+  background: #1c3354;
+  color: #ffffff;
+}
+
+.tema label:has(:focus-visible) {
+  outline: 2px solid #8fb1e6;
+  outline-offset: 1px;
+}
+
+/* Botão primário; na página da Agenda vira flutuante no celular (.novo). */
 .botao {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: 6px;
   height: 36px;
   padding: 0 14px;
   border: none;
@@ -148,6 +295,26 @@ a:hover {
   background: var(--afundado);
   color: var(--texto-3);
   cursor: default;
+}
+
+.novo {
+  position: fixed;
+  right: 20px;
+  bottom: 28px;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 16px;
+  box-shadow: 0 12px 28px -10px rgba(11, 31, 58, 0.5);
+}
+
+/* No celular o texto some da tela, mas continua sendo o nome acessível do botão. */
+.novo span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 label {
@@ -198,68 +365,6 @@ select:focus-visible {
   color: var(--perigo);
 }
 
-.cabecalho {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.filtro {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.filtro > div {
-  width: 180px;
-}
-
-/* Sem borda dentro do cartão: separa por espaço e preenchimento. */
-.lista {
-  margin: 0;
-  list-style: none;
-}
-
-.lista li {
-  display: grid;
-  grid-template-columns: 12em 1fr auto;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-variant-numeric: tabular-nums;
-}
-
-.lista li:nth-child(even) {
-  background: var(--fundo);
-}
-
-@media (max-width: 480px) {
-  .lista li {
-    grid-template-columns: 1fr auto;
-  }
-  .lista li time {
-    grid-column: 1 / -1;
-  }
-}
-
-.formulario {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 560px;
-  padding: 24px;
-}
-
-.linha {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-}
-
 .botao-texto {
   height: 28px;
   padding: 0 8px;
@@ -270,4 +375,149 @@ select:focus-visible {
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.filtro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+}
+
+/* Sem borda dentro do cartão: separa por espaço e preenchimento. */
+.lista {
+  margin: 0;
+  list-style: none;
+}
+
+.lista li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lista li time {
+  grid-column: 1 / -1;
+}
+
+.lista li:nth-child(even) {
+  background: var(--fundo);
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+  padding: 20px;
+}
+
+/* Data e hora lado a lado já no celular; duração desce. */
+.linha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .filtro {
+    display: flex;
+  }
+
+  .filtro > div {
+    width: 180px;
+  }
+
+  .lista li {
+    grid-template-columns: 12em 1fr auto;
+  }
+
+  .lista li time {
+    grid-column: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+  }
+
+  .lateral {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100dvh;
+    padding: 14px 16px 24px;
+  }
+
+  .lateral .logo {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 18px;
+  }
+
+  .lateral .menu {
+    margin-top: 24px;
+  }
+
+  .lateral .menu a {
+    gap: 10px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    color: #a9b6c7;
+    font-size: 14px;
+  }
+
+  .lateral .menu a:hover,
+  .lateral .menu a.active {
+    color: #ffffff;
+  }
+
+  .abrir-menu {
+    display: none;
+  }
+
+  .topo {
+    height: 64px;
+    padding: 0 40px;
+  }
+
+  .trilha {
+    margin-left: 0;
+    font-size: 15px;
+  }
+
+  .conteudo {
+    padding: 24px 40px;
+  }
+
+  .novo {
+    position: static;
+    width: auto;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .novo span {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+  }
 }
