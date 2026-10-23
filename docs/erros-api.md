@@ -31,16 +31,20 @@ Código novo entra aqui e em `internal/api/erros.go` no mesmo PR.
 
 ## Códigos previstos
 
-Decididos em 02/10/2026; ainda não existem em `internal/api/erros.go`. Cada um
+Decididos em 02/10/2026 e 23/10/2026; ainda não existem em `internal/api/erros.go`. Cada um
 sobe para a tabela de cima, junto com a constante no `erros.go`, no PR do card
 que o introduz.
 
 | Status | `codigo`           | Quando | Entra em |
 |--------|--------------------|--------|----------|
 | 401    | `nao_autenticado`  | Sem sessão válida: cookie ausente, expirado ou revogado. | 2.5 |
-| 403    | `sem_permissao`    | Agendamento de outro prestador do mesmo tenant; `prestador_id` de outro pedido por um prestador; rota só de administrador; remover o criador da empresa; administrador que não é o criador removendo administrador. | 2.7 (remoções: 5.8) |
+| 401    | `credencial_invalida` | Login com e-mail inexistente ou senha errada; mesma mensagem nos dois casos. | 2.3 |
+| 403    | `sem_permissao`    | Agendamento de outro prestador do mesmo tenant; `prestador_id` de outro pedido por um prestador; rota só de administrador; remover o criador da empresa; administrador que não é o criador removendo administrador; aceite de convite com sessão de outro e-mail. | 2.7 (aceite: 2.19; remoções: 5.8) |
 | 409    | `status_invalido`  | Transição de status inválida: concluir antes do início; cancelar, remarcar ou trocar o serviço de agendamento cancelado ou concluído. | 5.1 |
-| 409    | `convite_invalido` | Convite expirado ou já aceito, ou para e-mail que já tem membership ativo no tenant. | 2.18, 2.19 |
+| 409    | `convite_invalido` | Convite expirado ou já aceito, ou para e-mail que já tem membership ativo no tenant. | 2.18, 2.19, 2.22 |
+| 409    | `email_em_uso`     | Cadastro ou criar conta pelo convite com e-mail que já tem conta. | 2.2, 2.22 |
+| 409    | `slug_em_uso`      | Cadastro com slug de empresa já usado. | 2.2 |
+| 429    | `muitas_tentativas` | Login acima do limite: 5 falhas por e-mail ou 20 por IP em 15 minutos. Cabeçalho `Retry-After` em segundos. | 2.8 |
 
 `conflito_horario` passa a valer também no `PATCH` que remarca ou troca o serviço
 (5.1), que dispara a constraint de sobreposição de novo.

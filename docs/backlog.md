@@ -1,6 +1,6 @@
 # Backlog
 
-## Organizado por fatias verticais — v2.2 · 02/10/2026
+## Organizado por fatias verticais — v2.3 · 23/10/2026
 
 Complementa `docs/requisitos.md` e `docs/guia-banco-de-dados.md`.
 
@@ -9,6 +9,8 @@ Complementa `docs/requisitos.md` e `docs/guia-banco-de-dados.md`.
 > **Mudanças da v2.1:** voltaram cinco itens das revisões de arquitetura de 16 e 17/09 que a v2.0 não trazia — Postgres no CI (0.17), teste de exclusão de tenant (0.18), migration `sessoes` (2.14), normalização de e-mail (2.15) e `secret_token` no webhook (3.15). A decisão de sessão (cookie `HttpOnly`) já estava tomada e deixou de aparecer como pendente. Cronograma recalculado.
 
 > **Mudanças da v2.2:** decisões de 02/10/2026 sobre papéis, agenda e financeiro (`requisitos.md` v0.8). Papéis administrador e prestador com escopo por prestador (2.7, teste 2.16); convites na Fatia 2 (2.17–2.20); agendamento nunca é apagado — a 5.1 perde o `DELETE` e ganha concluir; remoção de membro (5.8); tela de clientes na 3.8; preço nos serviços (6.1, 6.5a); fatia nova **7 Acompanhar** (calendário semanal, financeiro e `.ics`), e Entregar passa a ser a Fatia 8. Corte de escopo e cronograma recalculados (~474h).
+
+> **Mudanças da v2.3:** revisão da Fatia 2 (23/10/2026). A 2.7 aplica o `Escopo` também na criação de agendamento e a 2.16 testa isso; a escolha de empresa no login ficou decidida e é da 2.3 (`requisitos.md` §12); itens novos 2.21 (`GET /membros`, para a 2.20) e 2.22 (criar conta pelo convite, para a 2.19). Cronograma recalculado (~481h).
 
 ---
 
@@ -106,7 +108,7 @@ O carregamento de config da 0.4 passou para a 1.1.
 
 ---
 
-## FATIA 2 — Entrar · ~81h · 🎯 multi-tenant real
+## FATIA 2 — Entrar · ~88h · 🎯 multi-tenant real
 
 **Entrega:** dois usuários de tenants diferentes fazem login e cada um vê apenas a própria agenda; dentro da empresa, o prestador vê só os seus agendamentos, e o administrador convida novos membros.
 
@@ -132,14 +134,18 @@ O carregamento de config da 0.4 passou para a 1.1.
 | 2.18 | `[T2] POST e GET /convites: administrador convida administrador ou prestador` | M |
 | 2.19 | `[T2] Aceite do convite (endpoint e tela), reativando membership removido` | M |
 | 2.20 | `[T2] Tela de gestão de prestadores: listar membros e convidar` | M |
+| 2.21 | `[T2] GET /membros: lista os membros do tenant (só administrador)` | P |
+| 2.22 | `[T2] Criar conta pelo convite: grava só usuarios + membership do convite` | M |
 
 **Sessão já decidida:** cookie `HttpOnly` + `Secure` + `SameSite=Lax` com a tabela `sessoes` (`requisitos.md` §9). Por isso a 2.14 vem antes da 2.3.
 
-**Papéis decididos (02/10/2026):** `administrador` e `prestador`; o administrador também pode atender. O escopo por prestador é filtro na query, sem policy extra no RLS. A 2.7 monta o `Escopo` (`guia-banco-de-dados.md` §Acesso a dados): para o prestador, sempre o da sessão (`prestador_id` de outro → 403 `sem_permissao`); para o administrador, o do seletor ou nenhum. O handler nunca monta o filtro. Rota só de administrador responde 403 ao prestador.
+**Empresa no login (decidido em 23/10/2026, `requisitos.md` §12):** login só com e-mail e senha. Com uma membership ativa, a sessão nasce na empresa; com várias, nasce com `tenant_id` nulo e o usuário escolhe na tela da 2.10, que grava a empresa pelo slug (`POST /api/sessao/empresa`, 2.3). Até escolher, a sessão só acessa `/me`, logout e a escolha (2.6).
 
-> **2.16 é a 2.13 dentro da empresa.** A fixture cria os usuários via `/signup` e insere a 2ª membership direto no banco, pela conexão do dono das tabelas — sem depender do seed nem dos convites. Cobre a listagem: o prestador recebe só os próprios agendamentos, `prestador_id` de outro dá 403 e agendamento de outro tenant nunca aparece. PATCH, cancelar e concluir nascem na 5.1, que repete o critério (403 no mesmo tenant, 404 em outro).
+**Papéis decididos (02/10/2026):** `administrador` e `prestador`; o administrador também pode atender. O escopo por prestador é filtro na query, sem policy extra no RLS. A 2.7 monta o `Escopo` (`guia-banco-de-dados.md` §Acesso a dados): para o prestador, sempre o da sessão (`prestador_id` de outro → 403 `sem_permissao`); para o administrador, o do seletor ou nenhum. O handler nunca monta o filtro. Rota só de administrador responde 403 ao prestador. Vale também na criação (`POST /agendamentos`, 1.5): o prestador só agenda para si, e o administrador para qualquer membro ativo.
 
-> **Convites (2.17–2.20).** Administrador convida administrador ou prestador. Convite para e-mail que já tem membership ativo, expirado ou já aceito → 409 `convite_invalido`; token inexistente → 404. O aceite exige sessão com o e-mail do convite e reativa membership removido (`guia-banco-de-dados.md` §011). A remoção de membro fica na 5.8, porque depende do cancelamento da 5.2.
+> **2.16 é a 2.13 dentro da empresa.** A fixture cria os usuários via `/signup` e insere a 2ª membership direto no banco, pela conexão do dono das tabelas — sem depender do seed nem dos convites. Cobre a listagem e a criação: o prestador recebe só os próprios agendamentos, `prestador_id` de outro dá 403 (inclusive no `POST`) e agendamento de outro tenant nunca aparece. PATCH, cancelar e concluir nascem na 5.1, que repete o critério (403 no mesmo tenant, 404 em outro).
+
+> **Convites (2.17–2.20).** Administrador convida administrador ou prestador. Convite para e-mail que já tem membership ativo, expirado ou já aceito → 409 `convite_invalido`; token inexistente → 404. O aceite exige sessão com o e-mail do convite e reativa membership removido (`guia-banco-de-dados.md` §011). Convidado sem conta cria a conta pelo convite (2.22): grava só `usuarios` e a membership do convite, sem empresa nova. A 2.20 lista os membros pelo `GET /membros` (2.21). A remoção de membro fica na 5.8, porque depende do cancelamento da 5.2.
 
 **Critério de conclusão:** 2.13 e 2.16 passam no CI. Sem esses testes verdes, o isolamento é suposição, não garantia — e as fatias seguintes vão construir por cima dele.
 
@@ -300,18 +306,20 @@ A 15h/semana nominais, com ~70% de eficiência real (~10,5h/semana):
 |--------------|----------|-------------|-------------|
 | 0 Fundação   | 63h      | sem. 1–5    | sem. 1–6    |
 | 1 Agendar    | 46h      | sem. 6–8    | sem. 7–11   |
-| 2 Entrar     | 81h      | sem. 9–13   | sem. 12–19  |
-| 3 Avisar     | 71h      | sem. 14–18  | sem. 20–25  |
-| 4 Lembrar    | 42h      | sem. 19–21  | sem. 26–29  |
-| 5 Cancelar   | 52h      | sem. 22–24  | sem. 30–34  |
-| 6 Configurar | 50h      | sem. 25–27  | sem. 35–39  |
-| 7 Acompanhar | 37h      | sem. 28–30  | sem. 40–43  |
-| 8 Entregar   | 32h      | sem. 31–32  | sem. 44–46  |
-| **Total**    | **474h** | **~32 sem.** | **~46 sem.** |
+| 2 Entrar     | 88h      | sem. 9–14   | sem. 12–19  |
+| 3 Avisar     | 71h      | sem. 15–18  | sem. 20–26  |
+| 4 Lembrar    | 42h      | sem. 19–21  | sem. 27–30  |
+| 5 Cancelar   | 52h      | sem. 22–25  | sem. 31–35  |
+| 6 Configurar | 50h      | sem. 26–28  | sem. 36–40  |
+| 7 Acompanhar | 37h      | sem. 29–30  | sem. 41–43  |
+| 8 Entregar   | 32h      | sem. 31–33  | sem. 44–46  |
+| **Total**    | **481h** | **~33 sem.** | **~46 sem.** |
 
 O total subiu de 380h para 384h com o retrabalho de fatiar vertical, e para 397h com os itens reincorporados na v2.1. Em troca, a primeira demonstração sai na semana ~8 em vez da semana ~15.
 
 Na v2.2, para 474h: escopo por prestador e convites na Fatia 2 (2.16–2.20, +22h), tela de clientes na 3.8 (P → M, +3h), concluir e trocar serviço na 5.1 (M → G, +5h), remoção de membro na 5.8 (+10h) e a Fatia 7 (+37h). A 6.5 dividida (G → 6.5a M + 6.5b M) não muda o total.
+
+Na v2.3, para 481h: `GET /membros` (2.21, +2h) e criar conta pelo convite (2.22, +5h).
 
 **Paralelismo:** as Fatias 0 e 1 quase não paralelizam — trabalho serial com três pessoas em cima. A exceção é o frontend base (1.7–1.9), que não depende do banco. A partir da Fatia 3 abrem duas ou três frentes (bot / worker / frontend).
 

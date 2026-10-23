@@ -6,7 +6,29 @@ quando cards forem criados ou apagados (uma fatia por vez), num PR `docs`.
 
 Dependências copiadas do "Depende de" de cada issue — o corpo da issue é o contrato.
 
-Conferido em 17/10/2026.
+Conferido em 23/10/2026.
+
+## Mudanças de 23/10/2026 (backlog v2.3)
+
+Revisão da Fatia 2. Corpo editado no board (rodapé "Atualizado em 23/10/2026"):
+
+| Card | Item | O que mudou |
+|---|---|---|
+| #112 | 2.2 | E-mail ou slug já usado: 409 `email_em_uso` e `slug_em_uso` |
+| #113 | 2.3 | Dona da decisão da escolha de empresa (§8.2): `POST /api/sessao/empresa`; credencial inválida: 401 `credencial_invalida` |
+| #116 | 2.6 | Sessão sem empresa escolhida só acessa `/me`, logout, a escolha e o aceite do convite |
+| #117 | 2.7 | `Escopo` também no `POST /agendamentos`; passa a depender da 1.5 |
+| #118 | 2.8 | Rate limit: 429 `muitas_tentativas`, 5 falhas por e-mail e 20 por IP em 15 minutos |
+| #119 | 2.9 | Sem decisão em aberto; passa a depender da 2.3 |
+| #120 | 2.10 | Tela de escolha de empresa |
+| #123 | 2.13 | Passa a depender da 2.7 e da 2.12 |
+| #126 | 2.16 | Testa também o `POST /agendamentos` |
+| #128 | 2.18 | Link do convite copiado pelo administrador, sem e-mail; devolve o token |
+| #129 | 2.19 | Convidado sem conta vai para a 2.22; passa a depender dela; rota `POST /api/convites/{token}/aceite` |
+| #130 | 2.20 | Lista membros pela 2.21; passa a depender dela; "copiar link" do convite |
+| #136 | 2.22 | Rotas `GET /api/convites/{token}` e `POST /api/convites/{token}/conta`; e-mail com conta: 409 `email_em_uso` |
+
+Cards novos: #135 (2.21) e #136 (2.22).
 
 ## Mudanças de 02/10/2026 (backlog v2.2)
 
@@ -86,21 +108,42 @@ Itens 0.1 a 0.6 não têm card: as issues da numeração antiga foram apagadas.
 | #114 | 2.4 | POST /logout e invalidação | P | backend | 2.3, 2.5 |
 | #115 | 2.5 | Middleware de autenticação | M | backend | 2.14, 2.3 |
 | #116 | 2.6 | Middleware de tenant: valida membership e injeta app.tenant_id | G | backend, banco, **caminho crítico** | 2.5, 1.3 |
-| #117 | 2.7 | Middleware de autorização: papéis administrador/prestador e Escopo por prestador | M | backend | 2.6, 1.6 |
+| #117 | 2.7 | Middleware de autorização: papéis administrador/prestador e Escopo por prestador | M | backend | 2.6, 1.5, 1.6 |
 | #118 | 2.8 | Rate limit no endpoint de login | P | backend | 2.3 |
-| #119 | 2.9 | GET /me com os tenants do usuário | P | backend | 2.5 |
+| #119 | 2.9 | GET /me com os tenants do usuário | P | backend | 2.3, 2.5 |
 | #120 | 2.10 | Telas de cadastro e login | M | frontend | 2.2, 2.3, 1.9 |
 | #121 | 2.11 | Layout autenticado com indicação do tenant ativo | M | frontend | 2.9, 2.10 |
 | #122 | 2.12 | Remover TENANT_FIXO e PRESTADOR_FIXO do config | P | backend | 1.1, 2.6, 2.7 |
-| #123 | 2.13 | Teste automatizado de isolamento entre tenants em todos os endpoints | M | backend | 2.2, 2.3, 2.6, 0.17 |
+| #123 | 2.13 | Teste automatizado de isolamento entre tenants em todos os endpoints | M | backend | 2.2, 2.3, 2.6, 2.7, 2.12, 0.17 |
 | #124 | 2.14 | Migration: sessoes | P | banco | 0.9 |
 | #125 | 2.15 | Normalizar e-mail (trim + minúsculas) no cadastro e no login | P | backend | — |
 | #126 | 2.16 | Teste: prestador não lê agendamento de outro prestador do mesmo tenant | M | backend | 2.2, 2.3, 2.7, 0.17 |
 | #127 | 2.17 | Migration: convites (papel administrador ou prestador) | P | banco | 0.9 |
 | #128 | 2.18 | POST e GET /convites: administrador convida administrador ou prestador | M | backend | 2.17, 2.7 |
-| #129 | 2.19 | Aceite do convite (endpoint e tela), reativando membership removido | M | backend, frontend | 2.17, 2.5, 2.10 |
-| #130 | 2.20 | Tela de gestão de prestadores: listar membros e convidar | M | frontend | 2.18, 2.11 |
+| #129 | 2.19 | Aceite do convite (endpoint e tela), reativando membership removido | M | backend, frontend | 2.17, 2.5, 2.10, 2.22 |
+| #130 | 2.20 | Tela de gestão de prestadores: listar membros e convidar | M | frontend | 2.18, 2.21, 2.11 |
+| #135 | 2.21 | GET /membros: lista os membros do tenant (só administrador) | P | backend | 2.7 |
+| #136 | 2.22 | Criar conta pelo convite: grava só usuarios + membership do convite | M | backend, frontend | 2.1, 2.3, 2.10, 2.15, 2.17 |
 
-A 2.14 vem antes da 2.3: a sessão mora na tabela `sessoes`. A fatia fecha quando 2.13 e 2.16 passam no CI.
+A 2.14 vem antes da 2.3: a sessão mora na tabela `sessoes`. A 2.22 vem antes da 2.19: o aceite oferece "criar conta" a quem não tem conta. A fatia fecha quando 2.13 e 2.16 passam no CI.
 
-Com decisão em aberto no corpo da issue (pare e pergunte antes de começar): 2.2, 2.3, 2.8, 2.9, 2.18, 2.19 e 2.20.
+Sem decisão em aberto no corpo das issues da Fatia 2: as de 2.2, 2.3, 2.8, 2.18, 2.19 e 2.22 foram decididas em 23/10/2026 (`requisitos.md` §12).
+
+### Sequência recomendada
+
+Ondas pelo "Depende de" acima, supondo as Fatias 0 e 1 entregues. Os cards de
+uma mesma onda podem rodar em paralelo.
+
+| Onda | Cards | Por quê |
+|---|---|---|
+| 1 | 2.1 (#111), 2.14 (#124), 2.15 (#125), 2.17 (#127) | Sem dependência na fatia |
+| 2 | 2.2 (#112), 2.3 (#113) | Cadastro e login, sobre hash, `sessoes` e e-mail normalizado |
+| 3 | 2.5 (#115), 2.8 (#118), 2.10 (#120) | 2.8 é lateral e não bloqueia nada |
+| 4 | 2.6 (#116), 2.4 (#114), 2.9 (#119), 2.22 (#136) | 2.6 é o maior card e o de mais risco |
+| 5 | 2.7 (#117), 2.11 (#121), 2.19 (#129) | 2.7 destrava 2.12, 2.16, 2.18 e 2.21 |
+| 6 | 2.12 (#122), 2.16 (#126), 2.18 (#128), 2.21 (#135) | |
+| 7 | 2.13 (#123), 2.20 (#130) | 2.13 e 2.16 no CI fecham a fatia |
+
+**Caminho crítico:** 2.14 -> 2.3 -> 2.5 -> 2.6 -> 2.7 -> 2.12 -> 2.13. Atraso
+na 2.6 ou na 2.7 atrasa a fatia; a trilha 2.7 -> 2.18/2.21 -> 2.20 tem o mesmo
+comprimento.
