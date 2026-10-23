@@ -1,9 +1,19 @@
 # Requisitos — Smart Booking
 
 Sistema de agendamentos multi-tenant com notificação via Telegram.
-Documento de requisitos e decisões técnicas — **v0.9** · 03/10/2026
+Documento de requisitos e decisões técnicas — **v0.10** · 23/10/2026
 
 > Fonte da verdade: este arquivo. A pasta do Drive é histórico.
+
+## Mudanças desde a v0.9
+
+Revisão da Fatia 2 (backlog v2.3), 23/10/2026.
+
+| # | O que mudou | Onde |
+|---|---|---|
+| 1 | Decidido como o usuário com várias empresas escolhe a ativa no login; o slug serve à escolha, não ao formulário | 6.2, 12 |
+| 2 | Decidido o cadastro do convidado sem conta (2.22) | 12 |
+| 3 | Estimativa recalculada (~481h) com os itens 2.21 e 2.22 | 13 |
 
 ## Mudanças desde a v0.8
 
@@ -270,8 +280,9 @@ pelo mesmo motivo: é a sessão que diz o tenant, e o aceite acha o convite pelo
 token, sem tenant. Consequência a carregar: **nessas quatro tabelas e em `tenants`
 (abaixo), o `WHERE` manual é obrigatório** e a rede de segurança não existe.
 
-`tenants` também fica de fora pelo mesmo motivo (o login resolve o slug antes do
-contexto). Por isso, **segredo por tenant não pode morar nessa tabela**: quando
+`tenants` também fica de fora pelo mesmo motivo (o login lista as empresas do
+usuário e a escolha resolve o slug antes do contexto). Por isso, **segredo por
+tenant não pode morar nessa tabela**: quando
 `telegram_bot_token` passar a ser usado, ele sai para uma tabela própria com
 policy, ou para o gerenciador de segredos.
 
@@ -555,6 +566,13 @@ Decidido em 03/10/2026:
 |---|---|
 | Nomenclatura | Padronizada em português; papel `owner` renomeado para `administrador` |
 
+Decidido em 23/10/2026 (recomendações de `docs/especificacao-fluxo.md` §8.1 e §8.2):
+
+| Tema | Decisão |
+|---|---|
+| Empresa no login | Login só com e-mail e senha, sem slug no formulário. Com uma membership ativa, a sessão nasce na empresa; com várias, nasce com `tenant_id` nulo e a tela de escolha grava a empresa pelo slug (`POST /api/sessao/empresa`), após validar o membership ativo. Até escolher, a sessão só acessa `/me`, logout e a escolha (2.3, 2.6, 2.10) |
+| Convidado sem conta | "Criar conta" pelo convite grava só `usuarios` e a membership do convite, com o e-mail do convite; o `/signup` continua criando empresa nova (2.22) |
+
 ## 13. Estimativa de prazo
 
 Base: 3 pessoas × ~5h/semana = 15h/semana nominais. Esforço por fatia no
@@ -564,19 +582,19 @@ Base: 3 pessoas × ~5h/semana = 15h/semana nominais. Esforço por fatia no
 |---|---|
 | T0 Fundação | 63h |
 | T1 Agendar | 46h |
-| T2 Entrar | 81h |
+| T2 Entrar | 88h |
 | T3 Avisar | 71h |
 | T4 Lembrar | 42h |
 | T5 Cancelar | 52h |
 | T6 Configurar | 50h |
 | T7 Acompanhar | 37h |
 | T8 Entregar | 32h |
-| **Total** | **~474h** |
+| **Total** | **~481h** |
 
-Escopo completo: ~32 semanas nominais, ~46 com 70% de eficiência real. Com os
+Escopo completo: ~33 semanas nominais, ~46 com 70% de eficiência real. Com os
 cortes do backlog (Fatia 6 exceto 6.1, 6.4 e 6.5a, botões inline, `.ics` e
-financeiro por prestador), ~410h: ~28 semanas nominais, ~40 realistas. Cortar
-também o calendário semanal, o último recurso, leva a ~395h.
+financeiro por prestador), ~417h: ~28 semanas nominais, ~40 realistas. Cortar
+também o calendário semanal, o último recurso, leva a ~402h.
 
 **Revisar o prazo comunicado.** A v0.4 dizia "5 a 6 meses" com base em 357h. Com
 o backlog atual, mesmo o escopo cortado passa de 9 meses no ritmo realista — ou o

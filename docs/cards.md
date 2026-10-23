@@ -6,7 +6,25 @@ quando cards forem criados ou apagados (uma fatia por vez), num PR `docs`.
 
 Dependências copiadas do "Depende de" de cada issue — o corpo da issue é o contrato.
 
-Conferido em 17/10/2026.
+Conferido em 23/10/2026.
+
+## Mudanças de 23/10/2026 (backlog v2.3)
+
+Revisão da Fatia 2. Corpo editado no board (rodapé "Atualizado em 23/10/2026"):
+
+| Card | Item | O que mudou |
+|---|---|---|
+| #113 | 2.3 | Dona da decisão da escolha de empresa (§8.2): `POST /api/sessao/empresa` |
+| #116 | 2.6 | Sessão sem empresa escolhida só acessa `/me`, logout e a escolha |
+| #117 | 2.7 | `Escopo` também no `POST /agendamentos`; passa a depender da 1.5 |
+| #119 | 2.9 | Sem decisão em aberto; passa a depender da 2.3 |
+| #120 | 2.10 | Tela de escolha de empresa |
+| #123 | 2.13 | Passa a depender da 2.7 e da 2.12 |
+| #126 | 2.16 | Testa também o `POST /agendamentos` |
+| #129 | 2.19 | Convidado sem conta vai para a 2.22; passa a depender dela |
+| #130 | 2.20 | Lista membros pela 2.21; passa a depender dela |
+
+Cards novos: #135 (2.21) e #136 (2.22).
 
 ## Mudanças de 02/10/2026 (backlog v2.2)
 
@@ -86,21 +104,23 @@ Itens 0.1 a 0.6 não têm card: as issues da numeração antiga foram apagadas.
 | #114 | 2.4 | POST /logout e invalidação | P | backend | 2.3, 2.5 |
 | #115 | 2.5 | Middleware de autenticação | M | backend | 2.14, 2.3 |
 | #116 | 2.6 | Middleware de tenant: valida membership e injeta app.tenant_id | G | backend, banco, **caminho crítico** | 2.5, 1.3 |
-| #117 | 2.7 | Middleware de autorização: papéis administrador/prestador e Escopo por prestador | M | backend | 2.6, 1.6 |
+| #117 | 2.7 | Middleware de autorização: papéis administrador/prestador e Escopo por prestador | M | backend | 2.6, 1.5, 1.6 |
 | #118 | 2.8 | Rate limit no endpoint de login | P | backend | 2.3 |
-| #119 | 2.9 | GET /me com os tenants do usuário | P | backend | 2.5 |
+| #119 | 2.9 | GET /me com os tenants do usuário | P | backend | 2.3, 2.5 |
 | #120 | 2.10 | Telas de cadastro e login | M | frontend | 2.2, 2.3, 1.9 |
 | #121 | 2.11 | Layout autenticado com indicação do tenant ativo | M | frontend | 2.9, 2.10 |
 | #122 | 2.12 | Remover TENANT_FIXO e PRESTADOR_FIXO do config | P | backend | 1.1, 2.6, 2.7 |
-| #123 | 2.13 | Teste automatizado de isolamento entre tenants em todos os endpoints | M | backend | 2.2, 2.3, 2.6, 0.17 |
+| #123 | 2.13 | Teste automatizado de isolamento entre tenants em todos os endpoints | M | backend | 2.2, 2.3, 2.6, 2.7, 2.12, 0.17 |
 | #124 | 2.14 | Migration: sessoes | P | banco | 0.9 |
 | #125 | 2.15 | Normalizar e-mail (trim + minúsculas) no cadastro e no login | P | backend | — |
 | #126 | 2.16 | Teste: prestador não lê agendamento de outro prestador do mesmo tenant | M | backend | 2.2, 2.3, 2.7, 0.17 |
 | #127 | 2.17 | Migration: convites (papel administrador ou prestador) | P | banco | 0.9 |
 | #128 | 2.18 | POST e GET /convites: administrador convida administrador ou prestador | M | backend | 2.17, 2.7 |
-| #129 | 2.19 | Aceite do convite (endpoint e tela), reativando membership removido | M | backend, frontend | 2.17, 2.5, 2.10 |
-| #130 | 2.20 | Tela de gestão de prestadores: listar membros e convidar | M | frontend | 2.18, 2.11 |
+| #129 | 2.19 | Aceite do convite (endpoint e tela), reativando membership removido | M | backend, frontend | 2.17, 2.5, 2.10, 2.22 |
+| #130 | 2.20 | Tela de gestão de prestadores: listar membros e convidar | M | frontend | 2.18, 2.21, 2.11 |
+| #135 | 2.21 | GET /membros: lista os membros do tenant (só administrador) | P | backend | 2.7 |
+| #136 | 2.22 | Criar conta pelo convite: grava só usuarios + membership do convite | M | backend, frontend | 2.1, 2.3, 2.10, 2.15, 2.17 |
 
-A 2.14 vem antes da 2.3: a sessão mora na tabela `sessoes`. A fatia fecha quando 2.13 e 2.16 passam no CI.
+A 2.14 vem antes da 2.3: a sessão mora na tabela `sessoes`. A 2.22 vem antes da 2.19: o aceite oferece "criar conta" a quem não tem conta. A fatia fecha quando 2.13 e 2.16 passam no CI.
 
-Com decisão em aberto no corpo da issue (pare e pergunte antes de começar): 2.2, 2.3, 2.8, 2.9, 2.18, 2.19 e 2.20.
+Com decisão em aberto no corpo da issue (pare e pergunte antes de começar): 2.2, 2.3, 2.8, 2.18, 2.19 e 2.22.

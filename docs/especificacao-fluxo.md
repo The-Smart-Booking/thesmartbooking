@@ -1,6 +1,6 @@
 # Especificação de fluxo — Smart Booking
 
-Versão **1.0** · 05/10/2026
+Versão **1.1** · 23/10/2026 (§8.1 e §8.2 decididos: req. §12)
 
 Papéis, ciclo de vida do agendamento, telas e modelo de dados.
 
@@ -52,7 +52,7 @@ sessão → 401 `nao_autenticado`.
 
 | Ação | Administrador | Prestador | Regra / erro | Fonte |
 |---|---|---|---|---|
-| Criar agendamento | Sim, para qualquer membro ativo, inclusive ele | Sim, só para si | Prestador com `prestador_id` de outro → 403 `sem_permissao` (inferido do `Escopo`); membro removido não recebe agendamento (código a definir); sobreposição → 409 `conflito_horario`; valor copiado do serviço, nunca do payload | RF05, RF07, RNF11, 1.5 |
+| Criar agendamento | Sim, para qualquer membro ativo, inclusive ele | Sim, só para si | Prestador com `prestador_id` de outro → 403 `sem_permissao` (inferido do `Escopo`); membro removido não recebe agendamento (código a definir); sobreposição → 409 `conflito_horario`; valor copiado do serviço, nunca do payload | RF05, RF07, RNF11, 1.5, 2.7 |
 | Listar agendamentos | Todos, ou filtrados pelo seletor | Só os próprios | Prestador pedindo `prestador_id` de outro → 403 | RF15, RNF11, 1.6, 2.7 |
 | Ver agendamento por id | Sim | Só os próprios | De outro prestador → 403 | req. §9 |
 | Remarcar | Sim | Só os próprios | Só em `confirmado` (senão 409 `status_invalido`); 409 `conflito_horario` | RF05, 5.1 |
@@ -95,7 +95,7 @@ sem policy extra (req. §6.2, guia §Acesso a dados).
 - **Membership ativo** é exigido para criar agendamento, criar disponibilidade e
   calcular slots. O seletor do administrador e o financeiro por prestador **incluem**
   removidos, marcados "(removido)" (guia §003).
-- **Testes:** 2.13 (entre tenants) e 2.16 (entre prestadores, listagem: 403 e 404);
+- **Testes:** 2.13 (entre tenants) e 2.16 (entre prestadores, listagem e criação: 403 e 404);
   a 5.1 repete o critério para PATCH, cancelar e concluir. Esconder na tela não é
   autorização (RNF11).
 
@@ -213,11 +213,12 @@ erros no formato de `docs/erros-api.md`, lidos pelo cliente HTTP da 1.9.
 - **Regras:** e-mail normalizado; rate limit (RNF06, 2.8); cookie `HttpOnly` +
   `Secure` + `SameSite=Lax`, sessão na tabela `sessoes` (req. §9); `tenant_id` fica na
   sessão. Só membership ativo entra. Logout revoga (`revogado_em`, 2.4).
-- **Em aberto:** como a empresa é escolhida quando o usuário tem mais de uma
-  membership, e o papel do slug no login (§8.2); códigos de credencial inválida e de
-  rate limit (§8.9).
-- **Backlog:** 2.3, 2.4, 2.8, 2.9, 2.10. Rotas `POST /api/login`, `POST /api/logout`,
-  `GET /api/me`.
+- **Empresa:** só e-mail e senha, sem slug. Uma membership ativa entra direto; com
+  várias, a sessão nasce com `tenant_id` nulo e a tela de escolha grava a empresa pelo
+  slug (decidido, req. §12; §8.2).
+- **Em aberto:** códigos de credencial inválida e de rate limit (§8.9).
+- **Backlog:** 2.3, 2.4, 2.6, 2.8, 2.9, 2.10. Rotas `POST /api/login`, `POST /api/logout`,
+  `POST /api/sessao/empresa`, `GET /api/me`.
 
 ### 4.3 Aceite de convite
 
@@ -228,10 +229,10 @@ erros no formato de `docs/erros-api.md`, lidos pelo cliente HTTP da 1.9.
   membership ou reativa a removida. Lookup por token sem tenant (`convites` fora do RLS).
 - **Erros:** token inexistente → 404 `nao_encontrado`; expirado, já aceito ou e-mail já
   com membership ativo → 409 `convite_invalido`.
-- **Em aberto:** convidado sem conta. O aceite exige sessão, e o único cadastro
-  existente (`/signup`) sempre cria uma empresa nova (§8.1). Como o link chega ao
-  convidado também não está definido.
-- **Backlog:** 2.17, 2.19. Rota a definir.
+- **Convidado sem conta:** "criar conta" pelo convite grava só `usuarios` e a
+  membership do convite (decidido, req. §12; 2.22).
+- **Em aberto:** como o link chega ao convidado (§8.1).
+- **Backlog:** 2.17, 2.19, 2.22. Rota a definir.
 
 ### 4.4 Calendário semanal
 
@@ -294,7 +295,8 @@ erros no formato de `docs/erros-api.md`, lidos pelo cliente HTTP da 1.9.
   na mesma transação (§3.3). A tela deve avisar isso antes de confirmar (inferido).
 - **Erros:** 403 `sem_permissao` (prestador na rota; remoção proibida); 409
   `convite_invalido` (e-mail já ativo).
-- **Backlog:** 2.18, 2.20, 5.8. Rotas `POST/GET /api/convites`; remoção a definir.
+- **Backlog:** 2.18, 2.20, 2.21, 5.8. Rotas `POST/GET /api/convites`, `GET /api/membros`;
+  remoção a definir.
 
 ### 4.7 Serviços e preços (só administrador)
 
@@ -606,11 +608,13 @@ Fora do formato da API: o webhook do Telegram responde 401 quando o
    cadastro (`/signup`) cria empresa nova. Como o link chega ao convidado também não
    está definido. *Recomendação:* na 2.19, a tela de aceite oferece "criar conta" que
    grava só `usuarios` + membership do convite, com e-mail fixo no do convite; o administrador
-   copia o link na tela de prestadores (sem envio de e-mail no MVP).
+   copia o link na tela de prestadores (sem envio de e-mail no MVP). **Decidido em
+   23/10/2026 (req. §12) o "criar conta", item 2.22; a entrega do link segue em aberto (2.18).**
 2. **Empresa no login.** O modelo admite várias memberships (req. §6.3), `sessoes.tenant_id`
    é nulo, e req. §6.2 fala em resolver o slug no login; nada diz como o usuário
    escolhe a empresa. *Recomendação:* com uma membership ativa, entra direto; com
-   várias, tela de escolha após o login; decidir na 2.3/2.9.
+   várias, tela de escolha após o login; decidir na 2.3/2.9. **Decidido em 23/10/2026
+   (req. §12) conforme a recomendação, no card 2.3.**
 3. **Onde gravar o Confirmar do Telegram.** "Registra a confirmação de presença" sem
    coluna no modelo. *Recomendação:* coluna nula `presenca_confirmada_em timestamptz`
    em `agendamentos`, por migration nova na 5.6, e indicador no calendário; decidir
