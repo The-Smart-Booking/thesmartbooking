@@ -14,6 +14,7 @@ Revisão da Fatia 2 (backlog v2.3), 23/10/2026.
 | 1 | Decidido como o usuário com várias empresas escolhe a ativa no login; o slug serve à escolha, não ao formulário | 6.2, 12 |
 | 2 | Decidido o cadastro do convidado sem conta (2.22) | 12 |
 | 3 | Estimativa recalculada (~481h) com os itens 2.21 e 2.22 | 13 |
+| 4 | Decididos os códigos de erro da Fatia 2, o rate limit do login, a entrega do link do convite e as rotas do convite | 12 |
 
 ## Mudanças desde a v0.8
 
@@ -566,12 +567,17 @@ Decidido em 03/10/2026:
 |---|---|
 | Nomenclatura | Padronizada em português; papel `owner` renomeado para `administrador` |
 
-Decidido em 23/10/2026 (recomendações de `docs/especificacao-fluxo.md` §8.1 e §8.2):
+Decidido em 23/10/2026 (recomendações de `docs/especificacao-fluxo.md` §8.1, §8.2 e §8.9):
 
 | Tema | Decisão |
 |---|---|
 | Empresa no login | Login só com e-mail e senha, sem slug no formulário. Com uma membership ativa, a sessão nasce na empresa; com várias, nasce com `tenant_id` nulo e a tela de escolha grava a empresa pelo slug (`POST /api/sessao/empresa`), após validar o membership ativo. Até escolher, a sessão só acessa `/me`, logout e a escolha (2.3, 2.6, 2.10) |
 | Convidado sem conta | "Criar conta" pelo convite grava só `usuarios` e a membership do convite, com o e-mail do convite; o `/signup` continua criando empresa nova (2.22) |
+| E-mail ou slug já usado | 409 `email_em_uso` (signup e criar conta pelo convite) e 409 `slug_em_uso` (2.2, 2.22) |
+| Credencial inválida | 401 `credencial_invalida`, a mesma resposta para e-mail inexistente e senha errada (2.3) |
+| Rate limit do login | 429 `muitas_tentativas` com `Retry-After`; 5 tentativas falhas por e-mail normalizado e 20 por IP em 15 minutos; login certo zera o contador do e-mail; contador em memória na API (2.8) |
+| Link do convite | O administrador copia o link `/convite/{token}` na tela de prestadores; sem envio de e-mail no MVP. `POST` e `GET /api/convites` devolvem o token (2.18, 2.20) |
+| Rotas do convite | `GET /api/convites/{token}` sem sessão (empresa, papel e e-mail); `POST /api/convites/{token}/aceite` com sessão, fora do middleware de tenant, e a sessão passa para a empresa do convite; `POST /api/convites/{token}/conta` sem sessão. Telas `/convite/:token` e `/convite/:token/conta`. Sessão com outro e-mail → 403 `sem_permissao` (2.19, 2.22, 2.6) |
 
 ## 13. Estimativa de prazo
 

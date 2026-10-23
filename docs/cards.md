@@ -14,15 +14,19 @@ Revisão da Fatia 2. Corpo editado no board (rodapé "Atualizado em 23/10/2026")
 
 | Card | Item | O que mudou |
 |---|---|---|
-| #113 | 2.3 | Dona da decisão da escolha de empresa (§8.2): `POST /api/sessao/empresa` |
-| #116 | 2.6 | Sessão sem empresa escolhida só acessa `/me`, logout e a escolha |
+| #112 | 2.2 | E-mail ou slug já usado: 409 `email_em_uso` e `slug_em_uso` |
+| #113 | 2.3 | Dona da decisão da escolha de empresa (§8.2): `POST /api/sessao/empresa`; credencial inválida: 401 `credencial_invalida` |
+| #116 | 2.6 | Sessão sem empresa escolhida só acessa `/me`, logout, a escolha e o aceite do convite |
 | #117 | 2.7 | `Escopo` também no `POST /agendamentos`; passa a depender da 1.5 |
+| #118 | 2.8 | Rate limit: 429 `muitas_tentativas`, 5 falhas por e-mail e 20 por IP em 15 minutos |
 | #119 | 2.9 | Sem decisão em aberto; passa a depender da 2.3 |
 | #120 | 2.10 | Tela de escolha de empresa |
 | #123 | 2.13 | Passa a depender da 2.7 e da 2.12 |
 | #126 | 2.16 | Testa também o `POST /agendamentos` |
-| #129 | 2.19 | Convidado sem conta vai para a 2.22; passa a depender dela |
-| #130 | 2.20 | Lista membros pela 2.21; passa a depender dela |
+| #128 | 2.18 | Link do convite copiado pelo administrador, sem e-mail; devolve o token |
+| #129 | 2.19 | Convidado sem conta vai para a 2.22; passa a depender dela; rota `POST /api/convites/{token}/aceite` |
+| #130 | 2.20 | Lista membros pela 2.21; passa a depender dela; "copiar link" do convite |
+| #136 | 2.22 | Rotas `GET /api/convites/{token}` e `POST /api/convites/{token}/conta`; e-mail com conta: 409 `email_em_uso` |
 
 Cards novos: #135 (2.21) e #136 (2.22).
 
@@ -123,4 +127,4 @@ Itens 0.1 a 0.6 não têm card: as issues da numeração antiga foram apagadas.
 
 A 2.14 vem antes da 2.3: a sessão mora na tabela `sessoes`. A 2.22 vem antes da 2.19: o aceite oferece "criar conta" a quem não tem conta. A fatia fecha quando 2.13 e 2.16 passam no CI.
 
-Com decisão em aberto no corpo da issue (pare e pergunte antes de começar): 2.2, 2.3, 2.8, 2.18, 2.19 e 2.22.
+Sem decisão em aberto no corpo das issues da Fatia 2: as de 2.2, 2.3, 2.8, 2.18, 2.19 e 2.22 foram decididas em 23/10/2026 (`requisitos.md` §12).

@@ -202,8 +202,8 @@ erros no formato de `docs/erros-api.md`, lidos pelo cliente HTTP da 1.9.
 - **Regras:** e-mail normalizado (trim + minúsculas, 2.15) e único por `lower(email)`;
   senha Argon2id (2.1, RNF04); slug `^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$` e único. Uma
   transação: `usuarios` → `tenants` (com `criado_por`) → `memberships` administrador (2.2).
-- **Erros:** 400 `requisicao_invalida`; e-mail ou slug já usado: código a definir
-  (§8.9).
+- **Erros:** 400 `requisicao_invalida`; e-mail já usado → 409 `email_em_uso`; slug já
+  usado → 409 `slug_em_uso` (decidido, req. §12; §8.9).
 - **Backlog:** 2.2, 2.10, 2.15. Rota `POST /api/signup`.
 
 ### 4.2 Login
@@ -216,7 +216,9 @@ erros no formato de `docs/erros-api.md`, lidos pelo cliente HTTP da 1.9.
 - **Empresa:** só e-mail e senha, sem slug. Uma membership ativa entra direto; com
   várias, a sessão nasce com `tenant_id` nulo e a tela de escolha grava a empresa pelo
   slug (decidido, req. §12; §8.2).
-- **Em aberto:** códigos de credencial inválida e de rate limit (§8.9).
+- **Erros:** e-mail inexistente ou senha errada → 401 `credencial_invalida`, mesma
+  mensagem; acima de 5 falhas por e-mail ou 20 por IP em 15 minutos → 429
+  `muitas_tentativas` com `Retry-After` (decidido, req. §12; §8.9).
 - **Backlog:** 2.3, 2.4, 2.6, 2.8, 2.9, 2.10. Rotas `POST /api/login`, `POST /api/logout`,
   `POST /api/sessao/empresa`, `GET /api/me`.
 
@@ -228,11 +230,16 @@ erros no formato de `docs/erros-api.md`, lidos pelo cliente HTTP da 1.9.
 - **Regras:** token único, validade de 7 dias, uso único (`aceito_em`). Aceite cria a
   membership ou reativa a removida. Lookup por token sem tenant (`convites` fora do RLS).
 - **Erros:** token inexistente → 404 `nao_encontrado`; expirado, já aceito ou e-mail já
-  com membership ativo → 409 `convite_invalido`.
+  com membership ativo → 409 `convite_invalido`; sessão com outro e-mail → 403
+  `sem_permissao`; criar conta com e-mail que já tem conta → 409 `email_em_uso`.
 - **Convidado sem conta:** "criar conta" pelo convite grava só `usuarios` e a
   membership do convite (decidido, req. §12; 2.22).
-- **Em aberto:** como o link chega ao convidado (§8.1).
-- **Backlog:** 2.17, 2.19, 2.22. Rota a definir.
+- **Link:** o administrador copia `/convite/{token}` na tela de prestadores, sem e-mail
+  no MVP (decidido, req. §12; §8.1).
+- **Backlog:** 2.17, 2.19, 2.22. Telas `/convite/:token` e `/convite/:token/conta`; rotas
+  `GET /api/convites/{token}` (sem sessão), `POST /api/convites/{token}/aceite` (com sessão,
+  fora do middleware de tenant; a sessão passa para a empresa do convite) e
+  `POST /api/convites/{token}/conta` (sem sessão).
 
 ### 4.4 Calendário semanal
 
@@ -289,7 +296,8 @@ erros no formato de `docs/erros-api.md`, lidos pelo cliente HTTP da 1.9.
 - **Objetivo:** gerir quem é da empresa (RF12).
 - **Dados:** membros com nome, e-mail, papel e situação (ativo ou removido); convites
   pendentes (inferido de `GET /convites`). O criador aparece sem botão de remover.
-- **Ações:** convidar por e-mail com papel `administrador` ou `prestador`; remover membro (5.8).
+- **Ações:** convidar por e-mail com papel `administrador` ou `prestador`; copiar o link de
+  convite pendente (sem e-mail no MVP, 2.18); remover membro (5.8).
 - **Regras:** só o criador remove administrador; ninguém remove o criador; administrador não criador
   remove só prestadores. Remover cancela os futuros do removido e avisa os clientes,
   na mesma transação (§3.3). A tela deve avisar isso antes de confirmar (inferido).
@@ -574,11 +582,15 @@ card indicado.
 |---|---|---|---|
 | 400 | `requisicao_invalida` | JSON malformado, campo obrigatório ausente, valor inválido | 1.7 |
 | 401 | `nao_autenticado` | Cookie ausente, expirado ou revogado (previsto) | 2.5 |
-| 403 | `sem_permissao` | Agendamento de outro prestador; `prestador_id` de outro pedido por prestador; rota só de administrador; remover o criador; administrador não criador removendo administrador (previsto) | 2.7, 5.8 |
+| 401 | `credencial_invalida` | Login com e-mail inexistente ou senha errada (previsto) | 2.3 |
+| 403 | `sem_permissao` | Agendamento de outro prestador; `prestador_id` de outro pedido por prestador; rota só de administrador; remover o criador; administrador não criador removendo administrador; aceite com sessão de outro e-mail (previsto) | 2.7, 2.19, 5.8 |
 | 404 | `nao_encontrado` | Recurso inexistente ou de outro tenant; token de convite inexistente | 1.7 |
 | 409 | `conflito_horario` | Sobreposição (23P01) no `POST` e no `PATCH` | 1.5, 5.1 |
 | 409 | `status_invalido` | Concluir antes do início; cancelar, remarcar ou trocar serviço de `cancelado` ou `concluido` (previsto) | 5.1 |
-| 409 | `convite_invalido` | Convite expirado, já aceito ou para e-mail com membership ativo (previsto) | 2.18, 2.19 |
+| 409 | `convite_invalido` | Convite expirado, já aceito ou para e-mail com membership ativo (previsto) | 2.18, 2.19, 2.22 |
+| 409 | `email_em_uso` | Cadastro ou criar conta pelo convite com e-mail que já tem conta (previsto) | 2.2, 2.22 |
+| 409 | `slug_em_uso` | Cadastro com slug já usado (previsto) | 2.2 |
+| 429 | `muitas_tentativas` | Login acima do limite, com `Retry-After` (previsto) | 2.8 |
 | 500 | `erro_interno` | Falha inesperada; mensagem genérica, detalhe só no log | 1.7 |
 
 Fora do formato da API: o webhook do Telegram responde 401 quando o
@@ -609,7 +621,8 @@ Fora do formato da API: o webhook do Telegram responde 401 quando o
    está definido. *Recomendação:* na 2.19, a tela de aceite oferece "criar conta" que
    grava só `usuarios` + membership do convite, com e-mail fixo no do convite; o administrador
    copia o link na tela de prestadores (sem envio de e-mail no MVP). **Decidido em
-   23/10/2026 (req. §12) o "criar conta", item 2.22; a entrega do link segue em aberto (2.18).**
+   23/10/2026 (req. §12) conforme a recomendação: "criar conta" na 2.22 e link copiado
+   pelo administrador na 2.18.**
 2. **Empresa no login.** O modelo admite várias memberships (req. §6.3), `sessoes.tenant_id`
    é nulo, e req. §6.2 fala em resolver o slug no login; nada diz como o usuário
    escolhe a empresa. *Recomendação:* com uma membership ativa, entra direto; com
@@ -643,6 +656,9 @@ Fora do formato da API: o webhook do Telegram responde 401 quando o
    cliente removido ao criar agendamento. *Recomendação:* acrescentar em "Códigos
    previstos" do `erros-api.md` nos cards 2.2, 2.3, 2.8 e 5.1 (ex.: 401 para
    credencial, 429 para rate limit, 409 para duplicado, 400 para referência inativa).
+   **Decidido em 23/10/2026 (req. §12) para a Fatia 2:** 401 `credencial_invalida`, 429
+   `muitas_tentativas`, 409 `email_em_uso` e `slug_em_uso`. Serviço inativo na troca (5.1) e
+   prestador ou cliente removido ao criar agendamento seguem em aberto (fora da Fatia 2).
 10. **Clientes além de listar e criar.** Editar, remover (`removido_em`) e regenerar o
     `vinculo_token` (expira em 30 dias) não têm item no backlog. *Recomendação:* card
     pequeno na T3 junto da 3.8, ou registrar como corte consciente.
