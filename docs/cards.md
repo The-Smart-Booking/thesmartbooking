@@ -128,3 +128,22 @@ Itens 0.1 a 0.6 não têm card: as issues da numeração antiga foram apagadas.
 A 2.14 vem antes da 2.3: a sessão mora na tabela `sessoes`. A 2.22 vem antes da 2.19: o aceite oferece "criar conta" a quem não tem conta. A fatia fecha quando 2.13 e 2.16 passam no CI.
 
 Sem decisão em aberto no corpo das issues da Fatia 2: as de 2.2, 2.3, 2.8, 2.18, 2.19 e 2.22 foram decididas em 23/10/2026 (`requisitos.md` §12).
+
+### Sequência recomendada
+
+Ondas pelo "Depende de" acima, supondo as Fatias 0 e 1 entregues. Os cards de
+uma mesma onda podem rodar em paralelo.
+
+| Onda | Cards | Por quê |
+|---|---|---|
+| 1 | 2.1 (#111), 2.14 (#124), 2.15 (#125), 2.17 (#127) | Sem dependência na fatia |
+| 2 | 2.2 (#112), 2.3 (#113) | Cadastro e login, sobre hash, `sessoes` e e-mail normalizado |
+| 3 | 2.5 (#115), 2.8 (#118), 2.10 (#120) | 2.8 é lateral e não bloqueia nada |
+| 4 | 2.6 (#116), 2.4 (#114), 2.9 (#119), 2.22 (#136) | 2.6 é o maior card e o de mais risco |
+| 5 | 2.7 (#117), 2.11 (#121), 2.19 (#129) | 2.7 destrava 2.12, 2.16, 2.18 e 2.21 |
+| 6 | 2.12 (#122), 2.16 (#126), 2.18 (#128), 2.21 (#135) | |
+| 7 | 2.13 (#123), 2.20 (#130) | 2.13 e 2.16 no CI fecham a fatia |
+
+**Caminho crítico:** 2.14 -> 2.3 -> 2.5 -> 2.6 -> 2.7 -> 2.12 -> 2.13. Atraso
+na 2.6 ou na 2.7 atrasa a fatia; a trilha 2.7 -> 2.18/2.21 -> 2.20 tem o mesmo
+comprimento.
