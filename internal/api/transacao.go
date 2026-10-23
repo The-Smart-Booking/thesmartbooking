@@ -61,6 +61,34 @@ func ComTransacao(s *storage.Store, tenant func(*http.Request) uuid.UUID, next h
 	})
 }
 
+// ComTransacaoNasRotas é o handler da API: requisição que casa com uma rota do
+// mux vai pelo ComTransacao; rota inexistente (404) e método não permitido (405)
+// respondem no formato da API sem abrir transação (1.13).
+func ComTransacaoNasRotas(s *storage.Store, tenant func(*http.Request) uuid.UUID, mux *http.ServeMux) http.Handler {
+	comTx := ComTransacao(s, tenant, mux)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if h, padrao := mux.Handler(r); padrao == "" {
+			h.ServeHTTP(erroDoMux{w}, r) // o handler de 404/405 do próprio mux, que seta o Allow
+			return
+		}
+		comTx.ServeHTTP(w, r)
+	})
+}
+
+// erroDoMux troca o 404/405 text/plain do ServeMux pelo formato da API; os
+// cabeçalhos que o mux setou (o Allow do 405) ficam.
+type erroDoMux struct{ http.ResponseWriter }
+
+func (e erroDoMux) WriteHeader(status int) {
+	if status == http.StatusMethodNotAllowed {
+		responderErro(e.ResponseWriter, status, CodigoMetodoNaoPermitido, "Método não permitido nesta rota.", nil)
+		return
+	}
+	responderErro(e.ResponseWriter, http.StatusNotFound, CodigoNaoEncontrado, "Rota não encontrada.", nil)
+}
+
+func (erroDoMux) Write(b []byte) (int, error) { return len(b), nil } // descarta o corpo text/plain
+
 // respostaAdiada guarda status e corpo até o fim da transação. Os cabeçalhos vão
 // direto para o w (só saem no WriteHeader dele); no 500, o ComTransacao os limpa.
 type respostaAdiada struct {

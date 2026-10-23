@@ -63,7 +63,7 @@ func main() {
 	tenant := func(*http.Request) uuid.UUID { return cfg.TenantFixo }
 	srv := &http.Server{
 		Addr:              ":" + cfg.PortaHTTP,
-		Handler:           api.ComTransacao(storage.NovoStore(pool), tenant, mux),
+		Handler:           api.ComTransacaoNasRotas(storage.NovoStore(pool), tenant, mux),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,

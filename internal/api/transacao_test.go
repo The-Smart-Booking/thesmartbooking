@@ -164,3 +164,41 @@ func TestTransacaoSemBancoResponde500(t *testing.T) {
 	}))
 	exigirErro(t, requisicao(t, h, seedAlfa), http.StatusInternalServerError, CodigoErroInterno)
 }
+
+// Rota inexistente e método não permitido (1.13): formato da API e sem
+// transação. O banco está fora do ar, então chamar o ComTenant daria 500, como
+// dá na rota registrada.
+func TestRotaInexistenteSemTransacao(t *testing.T) {
+	pool, err := pgxpool.New(context.Background(), "postgres://app_user@127.0.0.1:1/x?connect_timeout=1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	mux := http.NewServeMux()
+	(&Handlers{Tx: TxDaRequisicao}).Rotas(mux)
+	h := ComTransacaoNasRotas(storage.NovoStore(pool), tenantDoCabecalho, mux)
+
+	for _, caso := range []struct {
+		metodo, rota string
+		status       int
+		codigo       string
+	}{
+		{"GET", "/api/nao-existe", http.StatusNotFound, CodigoNaoEncontrado},
+		{"DELETE", "/api/clientes", http.StatusMethodNotAllowed, CodigoMetodoNaoPermitido},
+		{"GET", "/api/clientes", http.StatusInternalServerError, CodigoErroInterno}, // abriu transação
+	} {
+		t.Run(caso.metodo+" "+caso.rota, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(caso.metodo, caso.rota, nil)
+			r.Header.Set("Tenant", seedAlfa.String())
+			h.ServeHTTP(w, r)
+			exigirErro(t, w, caso.status, caso.codigo)
+			if ct := w.Header().Get("Content-Type"); ct != "application/json; charset=utf-8" {
+				t.Errorf("Content-Type = %q", ct)
+			}
+			if caso.status == http.StatusMethodNotAllowed && w.Header().Get("Allow") != "GET, HEAD, POST" {
+				t.Errorf("Allow = %q", w.Header().Get("Allow"))
+			}
+		})
+	}
+}
