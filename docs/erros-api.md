@@ -23,7 +23,8 @@ Toda resposta de erro (status 4xx/5xx) tem `Content-Type: application/json` e es
 | Status | `codigo`              | Quando |
 |--------|-----------------------|--------|
 | 400    | `requisicao_invalida` | JSON malformado, campo obrigatório ausente, valor inválido. |
-| 404    | `nao_encontrado`      | Recurso não existe (ou não pertence ao tenant). |
+| 404    | `nao_encontrado`      | Recurso não existe (ou não pertence ao tenant), ou rota inexistente. |
+| 405    | `metodo_nao_permitido` | Rota existe, mas não com esse método. O cabeçalho `Allow` lista os métodos aceitos. |
 | 409    | `conflito_horario`    | Agendamento sobrepõe outro (SQLSTATE `23P01`). |
 | 500    | `erro_interno`        | Falha inesperada. Mensagem sempre genérica; o detalhe fica só no log do servidor. |
 

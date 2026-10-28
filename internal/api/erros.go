@@ -9,10 +9,11 @@ import (
 // Códigos de erro estáveis. O frontend decide pelo código, nunca pela mensagem.
 // Formato documentado em docs/erros-api.md.
 const (
-	CodigoRequisicaoInvalida = "requisicao_invalida" // 400
-	CodigoNaoEncontrado      = "nao_encontrado"      // 404
-	CodigoConflitoHorario    = "conflito_horario"    // 409
-	CodigoErroInterno        = "erro_interno"        // 500
+	CodigoRequisicaoInvalida = "requisicao_invalida"  // 400
+	CodigoNaoEncontrado      = "nao_encontrado"       // 404
+	CodigoMetodoNaoPermitido = "metodo_nao_permitido" // 405
+	CodigoConflitoHorario    = "conflito_horario"     // 409
+	CodigoErroInterno        = "erro_interno"         // 500
 )
 
 type corpoErro struct {
