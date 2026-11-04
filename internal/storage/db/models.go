@@ -56,7 +56,7 @@ type Membership struct {
 	CriadoEm   pgtype.Timestamptz
 }
 
-type Notificaco struct {
+type Notificacao struct {
 	ID                uuid.UUID
 	TenantID          uuid.UUID
 	AgendamentoID     uuid.UUID
@@ -80,6 +80,16 @@ type Servico struct {
 	PrecoCentavos  int32
 	Ativo          bool
 	CriadoEm       pgtype.Timestamptz
+}
+
+type Sessao struct {
+	ID         uuid.UUID
+	UsuarioID  uuid.UUID
+	TenantID   *uuid.UUID
+	CriadoEm   pgtype.Timestamptz
+	ExpiraEm   pgtype.Timestamptz
+	RevogadoEm pgtype.Timestamptz
+	UserAgent  *string
 }
 
 type Tenant struct {
