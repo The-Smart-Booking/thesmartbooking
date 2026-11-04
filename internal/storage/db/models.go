@@ -56,7 +56,7 @@ type Membership struct {
 	CriadoEm   pgtype.Timestamptz
 }
 
-type Notificaco struct {
+type Notificacao struct {
 	ID                uuid.UUID
 	TenantID          uuid.UUID
 	AgendamentoID     uuid.UUID
