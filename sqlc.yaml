@@ -11,6 +11,9 @@ sql:
         out: internal/storage/db
         sql_package: pgx/v5
         emit_pointers_for_null_types: true
+        # O singular do sqlc é em inglês: sessoes viraria Sesso.
+        rename:
+          sesso: Sessao
         overrides:
           - db_type: uuid
             go_type: github.com/google/uuid.UUID

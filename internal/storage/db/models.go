@@ -82,6 +82,16 @@ type Servico struct {
 	CriadoEm       pgtype.Timestamptz
 }
 
+type Sessao struct {
+	ID         uuid.UUID
+	UsuarioID  uuid.UUID
+	TenantID   *uuid.UUID
+	CriadoEm   pgtype.Timestamptz
+	ExpiraEm   pgtype.Timestamptz
+	RevogadoEm pgtype.Timestamptz
+	UserAgent  *string
+}
+
 type Tenant struct {
 	ID               uuid.UUID
 	Nome             string
