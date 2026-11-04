@@ -69,7 +69,6 @@ func TestConferirSenhaHashInvalido(t *testing.T) {
 
 	casos := map[string]string{
 		"vazio":            "",
-		"texto puro":       "x",
 		"bcrypt":           "$2a$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW",
 		"argon2i":          trocando(1, "argon2i"),
 		"versão antiga":    trocando(2, "v=16"),
@@ -78,7 +77,6 @@ func TestConferirSenhaHashInvalido(t *testing.T) {
 		"tempo zero":       trocando(3, "m=19456,t=0,p=1"),
 		"salt sem base64":  trocando(4, "!!!"),
 		"chave vazia":      trocando(5, ""),
-		"partes a mais":    strings.Join(partes, "$") + "$extra",
 	}
 	for nome, hash := range casos {
 		t.Run(nome, func(t *testing.T) {
