@@ -43,11 +43,8 @@ func GerarHash(senha string) string {
 func ConferirSenha(senha, hash string) (bool, error) {
 	// "", "argon2id", "v=19", "m=...,t=...,p=...", salt, chave
 	partes := strings.Split(hash, "$")
-	if len(partes) != 6 || partes[0] != "" || partes[1] != "argon2id" {
-		return false, ErrHashInvalido
-	}
-	var versao int
-	if _, err := fmt.Sscanf(partes[2], "v=%d", &versao); err != nil || versao != argon2.Version {
+	if len(partes) != 6 || partes[0] != "" || partes[1] != "argon2id" ||
+		partes[2] != fmt.Sprintf("v=%d", argon2.Version) {
 		return false, ErrHashInvalido
 	}
 	var memoria, tempo uint32
