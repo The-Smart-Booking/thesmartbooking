@@ -64,6 +64,7 @@ func criarDadosExclusao(t *testing.T, dono *pgx.Conn) {
 			  FROM clientes c, servicos s WHERE c.tenant_id = $1 AND s.tenant_id = $1`, []any{tenant, u}},
 			{"INSERT INTO notificacoes (tenant_id, agendamento_id, tipo) SELECT $1, id, 'confirmacao' FROM agendamentos WHERE tenant_id = $1", []any{tenant}},
 			{"INSERT INTO sessoes (usuario_id, tenant_id, expira_em) VALUES ($1, $2, now() + interval '1 day')", []any{u, tenant}},
+			{"INSERT INTO convites (tenant_id, email, papel, criado_por) VALUES ($1, 'convidado@teste.invalid', 'prestador', $2)", []any{tenant, u}},
 		}
 		for _, q := range lote {
 			if _, err := tx.Exec(ctx, q.sql, q.args...); err != nil {

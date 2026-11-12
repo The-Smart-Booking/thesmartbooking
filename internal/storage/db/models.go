@@ -38,6 +38,18 @@ type Cliente struct {
 	CriadoEm        pgtype.Timestamptz
 }
 
+type Convite struct {
+	ID        uuid.UUID
+	TenantID  uuid.UUID
+	Email     string
+	Papel     string
+	Token     uuid.UUID
+	ExpiraEm  pgtype.Timestamptz
+	AceitoEm  pgtype.Timestamptz
+	CriadoPor uuid.UUID
+	CriadoEm  pgtype.Timestamptz
+}
+
 type Disponibilidade struct {
 	ID          uuid.UUID
 	TenantID    uuid.UUID
