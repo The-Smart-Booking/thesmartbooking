@@ -3,8 +3,11 @@ import { Title } from "@angular/platform-browser";
 import { type RouterStateSnapshot, type Routes, TitleStrategy } from "@angular/router";
 import { Agendamentos } from "./agendamentos/agendamentos";
 import { Agendar } from "./agendar/agendar";
+import { Cadastro } from "./cadastro/cadastro";
+import { Entrar } from "./entrar/entrar";
 import { Painel, trilhaDe } from "./layout";
 import { NovoAgendamento } from "./novo-agendamento/novo-agendamento";
+import { semSessaoGuard, sessaoGuard } from "./sessao";
 
 // data.titulo vira a trilha da top-bar (layout.ts): "Agenda › Novo agendamento".
 export const routes: Routes = [
@@ -19,11 +22,18 @@ export const routes: Routes = [
       { path: "**", component: Agendar },
     ],
   },
+  // A primeira página do app é o login; com sessão, o semSessaoGuard leva de lá à agenda.
+  { path: "", pathMatch: "full", redirectTo: "entrar" },
+  // Entrar e Cadastro (#120): fora da casca do painel.
+  { path: "entrar", component: Entrar, canActivate: [semSessaoGuard], data: { titulo: "Entrar" } },
+  { path: "cadastro", component: Cadastro, data: { titulo: "Cadastro" } },
+  // Painel só com sessão (sessaoGuard). O "**" é filho daqui: rota inexistente sem sessão
+  // vai para /entrar; com sessão, para a agenda.
   {
     path: "",
     component: Painel,
+    canActivate: [sessaoGuard],
     children: [
-      { path: "", pathMatch: "full", redirectTo: "agendamentos" },
       {
         path: "agendamentos",
         data: { titulo: "Agenda" },

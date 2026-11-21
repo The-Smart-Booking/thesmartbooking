@@ -1,6 +1,12 @@
 // Tratamento centralizado das respostas de erro da API. Formato: docs/erros-api.md.
 import { HttpErrorResponse, type HttpInterceptorFn } from "@angular/common/http";
+import { inject } from "@angular/core";
+import { Router } from "@angular/router";
 import { catchError, throwError } from "rxjs";
+
+/** Rotas de sessão que o interceptor trata à parte no 401. */
+export const ROTA_LOGIN = "/api/login";
+export const ROTA_EU = "/api/me";
 
 /** Resposta não-2xx da API. Decida pelo `codigo`; `mensagem` pode ser exibida. */
 export class ApiError extends Error {
@@ -56,6 +62,29 @@ export function converterErro(resp: HttpErrorResponse): Error {
   return new ApiError(resp.status, "erro_interno", "Erro interno. Tente novamente mais tarde.");
 }
 
-/** Interceptor registrado em app.config.ts: toda chamada à API sai com erro já tipado. */
-export const errosApiInterceptor: HttpInterceptorFn = (req, next) =>
-  next(req).pipe(catchError((e: unknown) => throwError(() => (e instanceof HttpErrorResponse ? converterErro(e) : e))));
+/**
+ * Interceptor registrado em app.config.ts: toda chamada à API sai com erro já tipado, e um 401
+ * (sessão ausente ou expirada) leva a /entrar, de forma central (#120). Ficam de fora o 401
+ * credencial_invalida do próprio login, o do /api/me, que a guarda do painel (sessao.ts) já trata,
+ * e o das rotas públicas.
+ */
+export const errosApiInterceptor: HttpInterceptorFn = (req, next) => {
+  const router = inject(Router);
+  return next(req).pipe(
+    catchError((e: unknown) => {
+      const erro = e instanceof HttpErrorResponse ? converterErro(e) : e;
+      if (
+        erro instanceof ApiError &&
+        erro.status === 401 &&
+        req.url !== ROTA_LOGIN &&
+        req.url !== ROTA_EU &&
+        // Página pública (/agendar): o cliente final não tem conta, o login da empresa não serve a ele.
+        !req.url.startsWith("/api/publico/") &&
+        !router.url.startsWith("/entrar")
+      ) {
+        void router.navigateByUrl("/entrar");
+      }
+      return throwError(() => erro);
+    }),
+  );
+};

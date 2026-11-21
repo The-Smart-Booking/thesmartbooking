@@ -1,4 +1,4 @@
-/* Estilos globais v2.1. Tokens em tokens.css (carregado antes, pelo angular.json); regras e
+/* Estilos globais (CSS v2.1 sobre os tokens v3; telas novas usam a seção "Componentes v3" no fim). Tokens em tokens.css (carregado antes, pelo angular.json); regras e
    componentes em docs/design-system/README.md. Nenhum hex aqui: tudo por var(--ds-*).
    Web primeiro (1440 px); abaixo de 1024 px o menu vira gaveta. */
 
@@ -41,7 +41,7 @@ p {
 }
 
 a {
-  color: var(--ds-acao);
+  color: var(--ds-tinta);
 }
 
 a:hover {
@@ -81,7 +81,7 @@ a:hover {
 }
 
 .ponto {
-  fill: var(--ds-acao);
+  fill: var(--ds-tinta);
 }
 
 /* ── Casca: menu lateral, top-bar e conteúdo (§4.22) ───────────────────── */
@@ -150,7 +150,7 @@ a:hover {
 }
 
 .logo-simbolo {
-  fill: var(--ds-acao);
+  fill: var(--ds-simbolo);
 }
 
 .logo-nome {
@@ -183,7 +183,7 @@ a:hover {
 /* Ativo: fundo hover + ameixa, sem trocar o peso. */
 .menu a.ativo {
   background: var(--ds-hover);
-  color: var(--ds-acao);
+  color: var(--ds-tinta);
 }
 
 .gaveta {
@@ -326,12 +326,12 @@ a:hover {
 .botao-terciario {
   padding: 0 var(--ds-e-2);
   background: transparent;
-  color: var(--ds-acao);
+  color: var(--ds-tinta);
 }
 
 .botao-terciario:hover {
   background: var(--ds-hover);
-  color: var(--ds-acao);
+  color: var(--ds-tinta);
 }
 
 .botao-pequeno {
@@ -451,7 +451,7 @@ select:focus-visible,
 textarea:focus-visible {
   outline: 3px solid var(--ds-foco);
   outline-offset: 1px;
-  border-color: var(--ds-acao);
+  border-color: var(--ds-tinta);
 }
 
 input::placeholder {
@@ -708,7 +708,7 @@ select:disabled {
 }
 
 .interruptor[aria-checked="true"] .interruptor-trilho {
-  background: var(--ds-acao);
+  background: var(--ds-tinta);
 }
 
 .interruptor[aria-checked="true"] .interruptor-trilho::after {
@@ -893,7 +893,7 @@ select:disabled {
 }
 
 .agenda-dia.hoje p {
-  color: var(--ds-acao);
+  color: var(--ds-tinta);
 }
 
 .agenda-dia.hoje .legenda {
@@ -977,7 +977,7 @@ select:disabled {
 }
 
 .bloco.selecionado {
-  box-shadow: 0 0 0 var(--ds-anel-selecao) var(--ds-acao);
+  box-shadow: 0 0 0 var(--ds-anel-selecao) var(--ds-tinta);
 }
 
 .bloco-linha {
@@ -1125,7 +1125,7 @@ select:disabled {
 
 .opcao[aria-checked="true"],
 .opcao.escolhida {
-  border: var(--ds-borda-selecao) solid var(--ds-acao);
+  border: var(--ds-borda-selecao) solid var(--ds-tinta);
   background: var(--ds-acao-suave);
   cursor: default;
 }
@@ -1150,7 +1150,7 @@ select:disabled {
 }
 
 .opcao[aria-checked="true"] .radio {
-  border-color: var(--ds-acao);
+  border-color: var(--ds-tinta);
 }
 
 .opcao[aria-checked="true"] .radio::after {
@@ -1158,7 +1158,7 @@ select:disabled {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--ds-acao);
+  background: var(--ds-tinta);
 }
 
 .opcao-texto {
@@ -1235,7 +1235,7 @@ input.invalido {
 }
 
 .dia-hoje {
-  color: var(--ds-acao);
+  color: var(--ds-tinta);
   font-weight: 700;
 }
 
@@ -1451,4 +1451,420 @@ input.invalido {
 
 .opcoes-3 .opcao-texto .pessoa-nome {
   white-space: normal;
+}
+
+/* ══ Componentes v3 ═══════════════════════════════════════════════════════════
+   Design.html › Componentes (Botão, Campo, Aviso) e as peças de Entrar e Cadastro do canvas.
+   Telas novas usam só esta seção; as classes .botao, .campo e .aviso de cima são v2.1. */
+
+.ds-ic {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Botão ── */
+.ds-botao {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-e-rotulo);
+  height: var(--ds-a-controle);
+  padding: 0 var(--ds-e-3);
+  border: 0;
+  border-radius: var(--ds-raio-pilula);
+  background: var(--ds-superficie);
+  box-shadow: inset 0 0 0 var(--ds-b-fio) var(--ds-divisoria);
+  color: var(--ds-texto);
+  font: 500 13px/1 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--ds-t-rapido),
+    box-shadow var(--ds-t-rapido),
+    color var(--ds-t-rapido);
+}
+.ds-botao::before {
+  content: "";
+  position: absolute;
+  inset: -2px; /* clique de 36 px */
+}
+.ds-botao .ds-ic {
+  color: var(--ds-icone);
+}
+.ds-botao:hover {
+  background: var(--ds-hover-leve);
+}
+.ds-botao:active {
+  background: var(--ds-hover);
+}
+.ds-botao:focus-visible {
+  outline: var(--ds-b-foco) solid var(--ds-foco);
+  outline-offset: 2px;
+}
+.ds-botao--principal {
+  background: var(--ds-acao);
+  box-shadow: none;
+  color: var(--ds-acao-texto);
+}
+.ds-botao--principal .ds-ic {
+  color: currentColor;
+}
+.ds-botao--principal:hover,
+.ds-botao--principal:active {
+  background: var(--ds-acao-pressionada);
+}
+.ds-botao--fantasma {
+  background: transparent;
+  box-shadow: none;
+}
+.ds-botao--icone {
+  width: var(--ds-a-controle);
+  padding: 0;
+}
+.ds-botao--grande {
+  height: var(--ds-a-acao-grande);
+  padding: 0 var(--ds-e-6);
+  font-size: 15px;
+}
+.ds-botao--grande::before {
+  inset: 0;
+}
+.ds-botao:disabled {
+  background: transparent;
+  box-shadow: inset 0 0 0 var(--ds-b-fio) var(--ds-divisoria-suave);
+  color: var(--ds-texto-3);
+  cursor: not-allowed;
+}
+.ds-botao--fantasma:disabled {
+  box-shadow: none;
+}
+.ds-botao:disabled .ds-ic {
+  color: var(--ds-texto-3);
+}
+/* Carregando: mesma largura, texto invisível e o indicador no centro. */
+.ds-botao[aria-busy="true"] {
+  color: transparent;
+  pointer-events: none;
+}
+.ds-botao[aria-busy="true"] .ds-ic {
+  visibility: hidden;
+}
+.ds-botao[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 1.75px solid var(--ds-texto);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ds-gira 0.8s linear infinite;
+}
+.ds-botao--principal[aria-busy="true"]::after {
+  border-color: var(--ds-acao-texto);
+  border-right-color: transparent;
+}
+
+/* ── Campo ── */
+.ds-campo {
+  display: grid;
+  gap: var(--ds-e-rotulo);
+  align-content: start;
+  min-width: 0;
+}
+.ds-campo > label {
+  font: 500 13px/18px var(--font-sans);
+  color: var(--ds-texto);
+}
+.ds-entrada {
+  width: 100%;
+  height: var(--ds-a-alvo);
+  padding: 0 var(--ds-e-3);
+  border: var(--ds-b-fio) solid var(--ds-borda);
+  border-radius: var(--ds-raio-campo);
+  background: var(--ds-superficie);
+  color: var(--ds-texto);
+  font: 400 13px/1 var(--font-sans);
+  transition: border-color var(--ds-t-rapido);
+}
+.ds-entrada::placeholder {
+  color: var(--ds-texto-3);
+}
+.ds-entrada:hover {
+  border-color: var(--ds-texto-3);
+}
+/* Foco: só a borda em tinta, sem halo, também pelo mouse: quem digita precisa saber onde está. */
+.ds-entrada:focus {
+  outline: none;
+  border-color: var(--ds-tinta);
+}
+.ds-entrada:disabled {
+  background: transparent;
+  border-color: var(--ds-divisoria-suave);
+  color: var(--ds-texto-3);
+  cursor: not-allowed;
+}
+.ds-ajuda {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-e-rotulo);
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ds-texto-2);
+}
+.ds-ajuda .ds-ic {
+  width: 13px;
+  height: 13px;
+  margin-top: 2px;
+}
+.ds-ajuda a {
+  color: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ds-campo--erro .ds-entrada,
+.ds-campo--erro .ds-prefixo {
+  border-color: var(--ds-erro);
+}
+.ds-campo--erro .ds-ajuda {
+  color: var(--ds-erro-texto);
+}
+.ds-campo--grande .ds-entrada,
+.ds-campo--grande .ds-prefixo {
+  height: var(--ds-a-campo-grande);
+  font-size: 15px;
+}
+
+/* Com prefixo: a parte fixa fica dentro da borda ("agendar/salao-aurora"). */
+.ds-prefixo {
+  display: flex;
+  align-items: center;
+  height: var(--ds-a-alvo);
+  padding: 0 var(--ds-e-3);
+  border: var(--ds-b-fio) solid var(--ds-borda);
+  border-radius: var(--ds-raio-campo);
+  background: var(--ds-superficie);
+  font: 400 13px/1 var(--font-sans);
+  transition: border-color var(--ds-t-rapido);
+}
+.ds-prefixo > span {
+  color: var(--ds-texto-3);
+}
+.ds-prefixo .ds-entrada {
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: inherit;
+}
+.ds-prefixo:hover {
+  border-color: var(--ds-texto-3);
+}
+.ds-prefixo:focus-within {
+  border-color: var(--ds-tinta);
+}
+.ds-prefixo:has(.ds-entrada:disabled) {
+  background: transparent;
+  border-color: var(--ds-divisoria-suave);
+}
+
+/* Campo com ação: botão dentro do campo (mostrar senha). */
+.ds-junto {
+  position: relative;
+}
+.ds-junto .ds-entrada {
+  padding-right: 40px;
+}
+.ds-junto > .ds-botao {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+}
+.ds-junto > .ds-botao:focus-visible {
+  outline-offset: 0;
+}
+.ds-junto > .ds-botao .ds-ic {
+  width: 16px;
+  height: 16px;
+}
+.ds-campo--grande .ds-junto .ds-entrada {
+  padding-right: 48px;
+}
+.ds-campo--grande .ds-junto > .ds-botao {
+  right: 6px;
+  top: 6px;
+}
+
+/* ── Aviso: faixa no fluxo da página, o que aconteceu e o que fazer ── */
+.ds-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-e-2);
+  padding: var(--ds-e-aviso) var(--ds-e-3);
+  border-radius: var(--ds-raio-campo);
+  font: 400 13px/18px var(--font-sans);
+}
+.ds-aviso .ds-ic {
+  margin-top: 2px;
+}
+.ds-aviso--erro {
+  background: var(--ds-erro-chip);
+  color: var(--ds-erro-texto);
+}
+.ds-aviso--atencao {
+  background: var(--ds-aguardando-chip);
+  color: var(--ds-aguardando-texto);
+}
+.ds-aviso--sucesso {
+  background: var(--ds-confirmado-chip);
+  color: var(--ds-confirmado-texto);
+}
+.ds-aviso--neutro {
+  background: var(--ds-faixa);
+  box-shadow: inset 0 0 0 var(--ds-b-fio) var(--ds-divisoria);
+  color: var(--ds-texto-2);
+}
+.ds-aviso--neutro .ds-ic {
+  color: var(--ds-icone);
+}
+
+/* ── Etapas: o texto diz a etapa, as barras só repetem ── */
+.ds-etapas {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-e-aviso);
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ds-texto-2);
+}
+.ds-etapas-barras {
+  display: flex;
+  gap: var(--ds-e-1);
+}
+.ds-etapas-barras > span {
+  width: 20px;
+  height: 4px;
+  border-radius: var(--ds-raio-pilula);
+  background: var(--ds-contorno);
+}
+.ds-etapas-barras > span.feita {
+  background: var(--ds-tinta);
+}
+
+/* ── Entrar e Cadastro: formulário à esquerda, peça de marca à direita ── */
+.entrada-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+  background: var(--ds-superficie);
+  color: var(--ds-texto);
+  font-family: var(--font-sans);
+}
+.entrada-coluna {
+  display: flex;
+  flex: 999 1 560px;
+  flex-direction: column;
+  min-width: 0;
+  padding: 36px var(--ds-e-12);
+}
+.entrada-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-e-4);
+}
+.entrada-simbolo path {
+  fill: var(--ds-simbolo);
+}
+.entrada-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-e-4);
+  width: 100%;
+  max-width: var(--ds-l-formulario);
+  margin: 0 auto;
+  padding: 200px 0 var(--ds-e-12);
+}
+.entrada-cabeca {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-e-2);
+  margin-bottom: var(--ds-e-2);
+}
+.entrada-titulo {
+  margin: 0;
+  font: 500 32px/38px var(--font-sans);
+  letter-spacing: -0.03em;
+  color: var(--ds-texto);
+  outline: none;
+}
+.entrada-frase {
+  margin: 0;
+  font: 400 15px/22px var(--font-sans);
+  color: var(--ds-texto-2);
+}
+.entrada-form > .ds-botao--grande {
+  width: 100%;
+  margin-top: var(--ds-e-2);
+}
+.entrada-lento {
+  margin: 0;
+  text-align: center;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ds-texto-2);
+}
+.entrada-troca {
+  margin: var(--ds-e-2) 0 0;
+  padding-top: 20px;
+  border-top: var(--ds-b-fio) solid var(--ds-divisoria-suave);
+  font: 400 15px/22px var(--font-sans);
+  color: var(--ds-texto-2);
+}
+.entrada-troca a {
+  color: var(--ds-tinta);
+  font-weight: 500;
+  text-decoration: none;
+}
+.entrada-troca a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.entrada-troca > .ds-botao--fantasma {
+  margin-left: calc(-1 * var(--ds-e-3));
+}
+/* Degradê só aqui, sem texto em cima (Design.html › Peças de marca). */
+.painel-marca {
+  display: grid;
+  flex: 0 1 576px;
+  place-items: center;
+  min-height: calc(100vh - 24px);
+  margin: 12px 12px 12px 0;
+  overflow: hidden;
+  border-radius: var(--ds-raio-painel);
+  background:
+    repeating-radial-gradient(circle at 50% 115%, transparent 0 47px, var(--ds-arco) 47px 48px),
+    linear-gradient(160deg, var(--ds-degrade-1) 0%, var(--ds-degrade-2) 50%, var(--ds-degrade-3) 100%);
+}
+.painel-marca path {
+  fill: var(--ds-simbolo-degrade);
+}
+@media (max-width: 900px) {
+  .entrada-coluna {
+    padding: var(--ds-e-6) 20px;
+  }
+  .entrada-form {
+    padding-top: var(--ds-e-12);
+  }
+  .painel-marca {
+    display: none;
+  }
 }

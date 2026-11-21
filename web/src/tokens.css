@@ -1,130 +1,158 @@
-/* Dayspot · tokens v2.1 (17/11/2026). Fonte única: styles.css e as telas de referência usam estes nomes.
-   Regras de uso: DESIGN.md e docs/design-system/README.md. Nenhuma tela usa hex solto: só var(--ds-*).
+/* Dayspot · tokens v3 (20/11/2026). Valores do Design.html (Design system v3, fundações aprovadas
+   em 20/11/2026). Nenhuma tela usa hex solto: só var(--ds-*).
    light-dark(claro, escuro): o color-scheme do <html> escolhe o lado.
    Sem data-tema, segue o sistema; data-tema="claro" | "escuro" força o tema.
-   Todos os pares de texto conferidos (WCAG AA) em 17/11/2026, nos dois temas. */
+   Pares de texto conferidos (WCAG AA) no Design.html. Sincronia guia → código: design-sync.json. */
 
 :root {
   color-scheme: light dark;
 
-  /* ── Neutros ─────────────────────────────────────────────── */
-  --ds-fundo:       light-dark(#FBF7F5, #1A1417); /* fundo da tela (papel) */
-  --ds-superficie:  light-dark(#FFFFFF, #251D21); /* cartão, painel, menu lateral, campo */
-  --ds-hover:       light-dark(#F4ECEA, #30272B); /* hover, botão secundário, trilho, esqueleto, item ativo do menu */
-  --ds-divisoria:   light-dark(#EEE3E0, #463A40); /* divisória e borda de cartão: só decorativa (1,18:1) */
-  --ds-borda:       light-dark(#8E807F, #857880); /* borda de campo e controle, interruptor desligado (3,56:1) */
-  --ds-texto:       light-dark(#2B2227, #F5ECEF); /* texto principal (grafite) */
-  --ds-texto-2:     light-dark(#5B4D53, #C0B0B7); /* secundário, legenda, cabeçalho de tabela */
-  --ds-texto-3:     light-dark(#8E807F, #857880); /* placeholder e desabilitado; nunca texto que precisa ser lido */
+  /* ── Cor (Design.html › Cor) ─────────────────────────────── */
+  --ds-fundo: light-dark(#f7f7f8, #141414); /* casca: atrás do painel, topo e menu */
+  --ds-superficie: light-dark(#ffffff, #1c1c1c); /* painel, campo, menu suspenso */
+  --ds-hover: light-dark(#f4f4f5, #282627); /* pressionado */
+  --ds-hover-leve: light-dark(#f6f6f7, #232122); /* hover de peça com e sem contorno */
+  --ds-faixa: light-dark(#fafafa, #1a1a1a);
+  --ds-casca-hover: light-dark(#efeff1, #222021);
+  --ds-divisoria: light-dark(#e8e8eb, #383536); /* fio entre áreas: decorativo */
+  --ds-divisoria-suave: light-dark(#f0f0f1, #2a2829);
+  --ds-contorno: light-dark(#e4e4e7, #3d3a3b);
+  --ds-contorno-forte: light-dark(#e4e4e7, #4a4647);
+  --ds-contorno-hover: light-dark(#d4d4d8, #6e696b);
+  --ds-tracejado: light-dark(#b4b4bb, #5c5759);
+  --ds-borda: light-dark(#8a8a93, #858083); /* borda de campo em repouso (3,4:1 claro, 4,4:1 escuro) */
+  --ds-grade-hora: light-dark(#f0f0f2, #2b2929);
+  --ds-grade-meia: light-dark(#f5f5f6, #232222);
+  --ds-rolagem: light-dark(#d4d4d8, #3d3a3b);
+  --ds-texto: light-dark(#18181b, #f3f1f2);
+  --ds-texto-2: light-dark(#52525b, #bdb8ba);
+  --ds-texto-3: light-dark(#71717a, #938d90); /* placeholder e desabilitado (4,8:1) */
+  --ds-icone: light-dark(#3f3f46, #c4bfc1);
+  --ds-acao: #eaa2c1; /* preenche a ação principal, o hoje e o horário escolhido; nunca texto */
+  --ds-acao-pressionada: light-dark(#e391b4, #f2bbd2);
+  --ds-acao-texto: light-dark(#18181b, #141414); /* texto e ícone sobre --ds-acao */
+  --ds-tinta: light-dark(#a83b70, #eaa2c1); /* texto, ícone e linha da marca: só no que está ativo ou escolhido */
+  --ds-foco: var(--ds-tinta);
+  --ds-acao-suave: light-dark(#fdf2f7, #2b2428);
+  --ds-menu-hover: light-dark(#fdf5f9, #241f22);
+  --ds-menu-ativo: light-dark(#fcedf3, #33282e);
+  --ds-hoje: light-dark(#fef9fb, #1f1a1d);
+  --ds-acento: light-dark(#f4a08a, #f4b49a); /* pêssego: só nas peças de marca */
+  --ds-marca: #86315c; /* símbolo D e wordmark; nunca em interface */
+  --ds-degrade-1: light-dark(#fbe1ed, #2c2220); /* peças de marca (Entrar, Cadastro): sem texto em cima */
+  --ds-degrade-2: light-dark(#eaa2c1, #33232b);
+  --ds-degrade-3: light-dark(#b994dc, #45283a);
+  --ds-arco: light-dark(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.05));
+  --ds-simbolo-degrade: light-dark(#ffffff, #eaa2c1);
+  --ds-veu: light-dark(rgba(24, 24, 27, 0.48), rgba(0, 0, 0, 0.6));
+  --ds-aguardando: light-dark(#a47817, #bf973a);
+  --ds-aguardando-texto: light-dark(#7a5200, #f2c14e);
+  --ds-aguardando-chip: light-dark(#fdf6e1, #342c17);
+  --ds-confirmado: light-dark(#458f49, #6aac70);
+  --ds-confirmado-texto: light-dark(#22622a, #7fcf86);
+  --ds-confirmado-chip: light-dark(#eef7ee, #1e3022);
+  --ds-feito: light-dark(#4086b6, #79a1c2);
+  --ds-feito-texto: light-dark(#1b527a, #8dbce3);
+  --ds-feito-chip: light-dark(#edf3f9, #1b2935);
+  --ds-cancelado: light-dark(#867e77, #a09c98);
+  --ds-cancelado-texto: light-dark(#5f5750, #b3ada8);
+  --ds-cancelado-chip: light-dark(#f4f1ee, #2c2a29);
+  --ds-faltou: light-dark(#8971cb, #a492da);
+  --ds-faltou-texto: light-dark(#5a3bb8, #b9a5f5);
+  --ds-faltou-chip: light-dark(#f4f1fd, #29243d);
+  --ds-erro: light-dark(#d5555d, #e1827e);
+  --ds-erro-texto: light-dark(#a8161f, #ff8a85); /* mensagem de erro e destrutivo */
+  --ds-erro-chip: light-dark(#fdeeee, #3e2324);
+  --ds-sombra: 0 1px 2px light-dark(rgba(24, 24, 27, 0.08), #0000); /* no escuro, sem sombra */
+  --ds-sombra-flutuante: 0 12px 32px -12px light-dark(rgba(24, 24, 27, 0.18), #0000), 0 2px 6px -2px light-dark(rgba(24, 24, 27, 0.06), #0000);
+  --ds-simbolo: light-dark(#86315C, #EE9DBF); /* símbolo D na casca: ameixa no claro, rosa no escuro (Design.html › Logo) */
 
-  /* ── Ação (ameixa): ação e seleção, nunca status ─────────── */
-  --ds-acao:              light-dark(#86315C, #EE9DBF); /* botão principal, link, seleção, item ativo, ponto dos ícones */
-  --ds-acao-pressionada:  light-dark(#6E2A55, #F4B4CF); /* hover e toque do principal (escuro: 10,6:1 com acao-texto) */
-  --ds-acao-suave:        light-dark(#FBF4F7, #33222B); /* fundo de opção e linha selecionadas (texto 12,9:1 no escuro) */
-  --ds-acao-texto:        light-dark(#FFFFFF, #1A1417); /* texto e ícone sobre ação ou erro cheio */
-  --ds-acento:            light-dark(#F4A08A, #F4B49A); /* marcador do horário escolhido: só preenchimento */
-  --ds-foco:              var(--ds-acao); /* anel de 3 px, só pelo teclado; sólido: 6,40:1 (claro) e 5,26:1 (escuro) no pior fundo */
+  /* ── Espaço, forma, altura, largura, fio (Design.html › Espaço, forma e altura) ── */
+  --ds-e-1: 4px;
+  --ds-e-rotulo: 6px;
+  --ds-e-2: 8px;
+  --ds-e-aviso: 10px;
+  --ds-e-3: 12px;
+  --ds-e-4: 16px;
+  --ds-e-6: 24px;
+  --ds-e-8: 32px;
+  --ds-e-12: 48px;
+  --ds-e-16: 64px;
+  --ds-raio-bloco: 8px;
+  --ds-raio-campo: 10px;
+  --ds-raio-menu: 12px;
+  --ds-raio-painel: 16px;
+  --ds-raio-pilula: 999px;
+  --ds-a-etiqueta: 24px;
+  --ds-a-controle: 32px;
+  --ds-a-alvo: 36px;
+  --ds-a-menu: 38px;
+  --ds-a-linha: 40px;
+  --ds-a-campo-grande: 44px;
+  --ds-a-acao-grande: 48px;
+  --ds-l-topo: 48px;
+  --ds-l-barra: 64px;
+  --ds-l-busca: 320px;
+  --ds-l-lateral: 360px;
+  --ds-l-formulario: 400px;
+  --ds-l-hora: 72px;
+  --ds-b-fio: 1px;
+  --ds-b-selecao: 1.5px;
+  --ds-b-foco: 2px;
+  --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ds-l-menu: 248px; /* v2.1: menu lateral atual; a v3 pede 60 px com a casca nova (#121) */
 
-  /* ── Status (fora da marca; sempre ícone + palavra) ─────────
-     sem sufixo: barra e ponto · -texto: texto e ícone · -chip: chip, aviso e bloco */
-  --ds-confirmado:       light-dark(#2E7D32, #7FCF86);
-  --ds-confirmado-texto: light-dark(#22622A, #7FCF86);
-  --ds-confirmado-chip:  light-dark(#E4F2E4, #24362A);
-  --ds-aguardando:       light-dark(#A87400, #F2C14E);
-  --ds-aguardando-texto: light-dark(#7A5200, #F2C14E);
-  --ds-aguardando-chip:  light-dark(#FCF0CF, #3A3220);
-  --ds-cancelado:        light-dark(#8C8279, #B5ACA4);
-  --ds-cancelado-texto:  light-dark(#5F5750, #B5ACA4);
-  --ds-cancelado-chip:   light-dark(#EEEAE5, #34302D);
-  --ds-feito:            light-dark(#1F5F8B, #8DBCE3);
-  --ds-feito-texto:      light-dark(#1B527A, #8DBCE3);
-  --ds-feito-chip:       light-dark(#E3EDF5, #1F2E3B);
-  --ds-faltou:           light-dark(#7350D6, #B9A5F5);
-  --ds-faltou-texto:     light-dark(#5A3BB8, #B9A5F5);
-  --ds-faltou-chip:      light-dark(#EEE9FC, #2F2843);
-  --ds-erro:             light-dark(#D1242F, #FF8A85); /* borda de campo inválido, barra */
-  --ds-erro-texto:       light-dark(#A8161F, #FF8A85); /* mensagem de erro, ação destrutiva, fundo do destrutivo cheio */
-  --ds-erro-chip:        light-dark(#FDE6E6, #42282A);
-
-  /* ── Gráfico ─────────────────────────────────────────────── */
-  --ds-grafico-recebido: var(--ds-acao);
-  --ds-grafico-marcado:  light-dark(#D98AAE, #A85A80); /* 2,56:1 no claro: sempre com legenda, tooltip e "Ver como tabela"; 3,48:1 no escuro */
-
-  /* ── Elevação: só no que flutua; no escuro, nenhuma ──────── */
-  --ds-sombra:       0 1px 3px rgba(43, 34, 39, .12);   /* opção ativa do segmento, botão do interruptor */
-  --ds-sombra-forte: 0 12px 32px rgba(43, 34, 39, .12); /* diálogo, menu suspenso, botão flutuante */
-  --ds-veu:          light-dark(rgba(26, 20, 23, .48), rgba(0, 0, 0, .6)); /* atrás de diálogo e gaveta */
-
-  /* ── Marca (fixos nos dois temas): só peças de marca ─────── */
-  --ds-marca-claro: #FBF7F5; /* símbolo claro sobre ameixa ou degradê */
-  --ds-dia-manha:   #FFD9B0; /* ponto do símbolo sobre o degradê */
-  --ds-degrade: linear-gradient(180deg, #FFD9B0 0%, #F4A08A 38%, #C9587E 70%, #6E2A55 100%); /* Entrar e Cadastro, sem texto em cima */
+  /* ── Movimento ───────────────────────────────────────────── */
+  --ds-t-rapido: 120ms; /* hover, cor */
+  --ds-t-medio: 220ms;  /* painel, diálogo abrindo */
+  --ds-t-saida: 160ms;  /* fechar é mais rápido que abrir */
+  --ds-curva: cubic-bezier(.2, .8, .2, 1);
 
   /* ── Ilustração de estado (um desenho serve aos dois temas) ─ */
   --ilu-traco: var(--ds-borda);
   --ilu-linha: var(--ds-divisoria);
   --ilu-preenchimento: var(--ds-hover);
   --ilu-superficie: var(--ds-superficie);
-  --ilu-ponto: var(--ds-acao);
+  --ilu-ponto: var(--ds-tinta);
   --ilu-acento: var(--ds-acento);
 
-  /* ── Tipografia ──────────────────────────────────────────── */
-  --ds-titulo: "Nunito", ui-rounded, system-ui, sans-serif;                 /* 700–800: título, horário, wordmark */
-  --ds-texto-fonte: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif; /* 400–700: todo o resto */
-
-  --ds-tx-h1: 800 40px/44px var(--ds-titulo);   /* letter-spacing -0.015em; Entrar, Cadastro */
-  --ds-tx-h2: 800 28px/34px var(--ds-titulo);   /* letter-spacing -0.01em; título de tela */
-  --ds-tx-h3: 700 20px/26px var(--ds-titulo);   /* título de cartão, painel, passo */
-  --ds-tx-h4: 700 16px/22px var(--ds-texto-fonte);
-  --ds-tx-corpo: 400 16px/24px var(--ds-texto-fonte);
-  --ds-tx-controle: 600 15px/22px var(--ds-texto-fonte); /* rótulo de campo, menu, segmento, botão pequeno */
-  --ds-tx-tabela: 400 15px/22px var(--ds-texto-fonte);   /* célula, lista de pares, aviso */
-  --ds-tx-botao: 600 16px/20px var(--ds-texto-fonte);
-  --ds-tx-legenda: 500 13px/18px var(--ds-texto-fonte);  /* menor texto da interface */
-  --ds-tx-horario-destaque: 800 32px/36px var(--ds-titulo);
-  --ds-tx-horario-lista: 800 20px/26px var(--ds-titulo);
-  --ds-tx-horario-botao: 800 16px/20px var(--ds-titulo);
-  --ds-tx-horario-bloco: 800 14px/18px var(--ds-titulo);
-
-  /* ── Espaço (base 4) ─────────────────────────────────────── */
-  --ds-e-1: 4px;  --ds-e-2: 8px;  --ds-e-3: 12px; --ds-e-4: 16px; --ds-e-5: 20px;
-  --ds-e-6: 24px; --ds-e-8: 32px; --ds-e-10: 40px; --ds-e-12: 48px; --ds-e-14: 56px;
-  --ds-e-rotulo: 6px;  /* rótulo → campo; ícone → texto no chip */
-  --ds-e-aviso: 10px;  /* ícone → texto no aviso; entre opções */
-  --ds-e-celula: 14px; /* padding vertical de célula e de item do menu */
-
-  /* ── Forma: três raios e a pílula ────────────────────────── */
-  --ds-raio-bloco: 12px;   /* bloco da agenda, esqueleto, marca de gráfico grande */
-  --ds-raio-medio: 16px;   /* campo, aviso, opção em cartão, dia, quadro interno, seletor de empresa */
-  --ds-raio-cartao: 24px;  /* cartão, painel e diálogo: um nível só */
-  --ds-raio-pilula: 999px; /* botão, horário, chip, segmento, faixa */
-
-  --ds-borda-campo: 1.5px;  /* campo, opção, horário livre */
-  --ds-borda-selecao: 2px;  /* opção selecionada */
-  --ds-anel-selecao: 2.5px; /* bloco da agenda selecionado */
-
-  /* ── Alturas ─────────────────────────────────────────────── */
-  --ds-a-chip: 28px;
-  --ds-a-botao-pequeno: 36px;
-  --ds-a-icone: 40px;         /* botão só ícone (36 dentro de painel); faixa de horário */
-  --ds-a-botao: 44px;         /* botão e horário */
-  --ds-a-campo: 48px;
-  --ds-a-botao-entrada: 52px; /* principal de Entrar, Cadastro e Resumo */
-
-  /* ── Layout ──────────────────────────────────────────────── */
-  --ds-l-menu: 248px;
-  --ds-l-topbar: 64px;
+  /* ── Apelidos v2.1 → v3 ──────────────────────────────────────
+     Só para as telas ainda no CSS v2.1 (Agenda, Novo agendamento, /agendar). Tela nova não usa.
+     Saem quando essas telas forem redesenhadas na v3. */
+  --ds-titulo: var(--font-sans);
+  --ds-texto-fonte: var(--font-sans);
+  --ds-tx-h2: 500 24px/30px var(--font-sans);
+  --ds-tx-h3: 500 18px/26px var(--font-sans);
+  --ds-tx-h4: 500 15px/22px var(--font-sans);
+  --ds-tx-corpo: 400 15px/22px var(--font-sans);
+  --ds-tx-controle: 500 13px/18px var(--font-sans);
+  --ds-tx-tabela: 400 13px/20px var(--font-sans);
+  --ds-tx-botao: 500 13px/20px var(--font-sans);
+  --ds-tx-legenda: 400 13px/18px var(--font-sans);
+  --ds-tx-horario-destaque: 500 32px/38px var(--font-sans);
+  --ds-tx-horario-lista: 500 18px/26px var(--font-sans);
+  --ds-tx-horario-botao: 500 13px/20px var(--font-sans);
+  --ds-tx-horario-bloco: 500 13px/18px var(--font-sans);
+  --ds-e-5: 20px;
+  --ds-e-10: 40px;
+  --ds-raio-medio: var(--ds-raio-campo);
+  --ds-raio-cartao: var(--ds-raio-painel);
+  --ds-borda-campo: var(--ds-b-fio);
+  --ds-borda-selecao: var(--ds-b-selecao);
+  --ds-anel-selecao: var(--ds-b-selecao);
+  --ds-a-chip: var(--ds-a-etiqueta);
+  --ds-a-botao-pequeno: var(--ds-a-controle);
+  --ds-a-icone: var(--ds-a-alvo);
+  --ds-a-botao: var(--ds-a-alvo);
+  --ds-a-campo: var(--ds-a-alvo);
+  --ds-a-botao-entrada: var(--ds-a-acao-grande);
+  --ds-l-topbar: var(--ds-l-barra);
   --ds-l-conteudo: 1240px;
-  --ds-l-painel: 340px;       /* detalhe e edição */
-  --ds-l-painel-largo: 360px; /* resumo e prévia */
-  --ds-l-publica: 1040px;     /* página do cliente */
-  --ds-l-hora-agenda: 72px;   /* 1 hora na grade */
-
-  /* ── Movimento ───────────────────────────────────────────── */
-  --ds-t-rapido: 150ms; /* hover, cor */
-  --ds-t-medio: 220ms;  /* painel, diálogo abrindo */
-  --ds-t-saida: 160ms;  /* fechar é mais rápido que abrir */
-  --ds-curva: cubic-bezier(.2, .8, .2, 1);
+  --ds-l-painel: 340px;
+  --ds-l-painel-largo: var(--ds-l-lateral);
+  --ds-l-publica: 1040px;
+  --ds-l-hora-agenda: var(--ds-l-hora);
 }
 
 :root[data-tema="claro"]  { color-scheme: light; }

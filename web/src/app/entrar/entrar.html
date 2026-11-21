@@ -1,0 +1,84 @@
+<app-pagina-entrada>
+  <form class="entrada-form" novalidate aria-labelledby="t-entrar" (submit)="enviar($event)">
+    <div class="entrada-cabeca">
+      <h1 id="t-entrar" class="entrada-titulo">Entre no Dayspot</h1>
+      <p class="entrada-frase">Use o e-mail e a senha da sua conta.</p>
+    </div>
+
+    <div class="ds-campo ds-campo--grande" [class.ds-campo--erro]="erroEmail()">
+      <label for="e-email">E-mail</label>
+      <input
+        class="ds-entrada"
+        id="e-email"
+        type="email"
+        autocomplete="email"
+        [value]="email()"
+        (input)="digitarEmail(valorDe($event))"
+        [attr.aria-invalid]="erroEmail() ? 'true' : null"
+        [attr.aria-describedby]="erroEmail() ? 'e-email-a' : null"
+      />
+      @if (erroEmail()) {
+        <span class="ds-ajuda" id="e-email-a">
+          <svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg>
+          <span>{{ erroEmail() }}</span>
+        </span>
+      }
+    </div>
+
+    <div class="ds-campo ds-campo--grande" [class.ds-campo--erro]="erroSenha()">
+      <label for="e-senha">Senha</label>
+      <div class="ds-junto">
+        <input
+          class="ds-entrada"
+          id="e-senha"
+          [type]="senhaVisivel() ? 'text' : 'password'"
+          autocomplete="current-password"
+          [value]="senha()"
+          (input)="digitarSenha(valorDe($event))"
+          [attr.aria-invalid]="erroSenha() ? 'true' : null"
+          [attr.aria-describedby]="erroSenha() ? 'e-senha-a' : null"
+        />
+        <button
+          type="button"
+          class="ds-botao ds-botao--fantasma ds-botao--icone"
+          aria-label="Mostrar senha"
+          [attr.aria-pressed]="senhaVisivel()"
+          (click)="alternarSenha()"
+        >
+          @if (senhaVisivel()) {
+            <svg lucideEyeOff class="ds-ic" aria-hidden="true"></svg>
+          } @else {
+            <svg lucideEye class="ds-ic" aria-hidden="true"></svg>
+          }
+        </button>
+      </div>
+      @if (erroSenha()) {
+        <span class="ds-ajuda" id="e-senha-a">
+          <svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg>
+          <span>{{ erroSenha() }}</span>
+        </span>
+      }
+    </div>
+
+    @if (erroGeral()) {
+      <div class="ds-aviso ds-aviso--erro" role="alert">
+        <svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg>
+        <span>{{ erroGeral() }}</span>
+      </div>
+    }
+
+    <button
+      type="submit"
+      class="ds-botao ds-botao--principal ds-botao--grande"
+      [disabled]="enviando()"
+      [attr.aria-busy]="enviando() ? 'true' : null"
+    >
+      Entrar
+    </button>
+    @if (lento()) {
+      <p class="entrada-lento" role="status">Está demorando um pouco. Aguarde.</p>
+    }
+
+    <p class="entrada-troca">Ainda não tem conta? <a routerLink="/cadastro">Cadastre sua empresa</a></p>
+  </form>
+</app-pagina-entrada>

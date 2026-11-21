@@ -1,0 +1,190 @@
+<app-pagina-entrada>
+  @if (etapa() === 1) {
+    <form class="entrada-form" novalidate aria-labelledby="t-conta" (submit)="continuar($event)">
+      <div class="entrada-cabeca">
+        <div class="ds-etapas" id="k-etapa">
+          <span class="ds-etapas-barras" aria-hidden="true"><span class="feita"></span><span></span></span>
+          Etapa 1 de 2
+        </div>
+        <h1 id="t-conta" class="entrada-titulo" tabindex="-1" aria-describedby="k-etapa">Crie sua conta</h1>
+        <p class="entrada-frase">Primeiro você, depois a empresa.</p>
+      </div>
+
+      <div class="ds-campo ds-campo--grande" [class.ds-campo--erro]="erros().nome">
+        <label for="k-nome">Seu nome</label>
+        <input
+          class="ds-entrada"
+          id="k-nome"
+          type="text"
+          autocomplete="name"
+          [value]="nome()"
+          (input)="digitar('nome', valorDe($event))"
+          [attr.aria-invalid]="erros().nome ? 'true' : null"
+          [attr.aria-describedby]="erros().nome ? 'k-nome-a' : null"
+        />
+        @if (erros().nome; as erro) {
+          <span class="ds-ajuda" id="k-nome-a"><svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg><span>{{ erro }}</span></span>
+        }
+      </div>
+
+      <div class="ds-campo ds-campo--grande" [class.ds-campo--erro]="erros().email">
+        <label for="k-email">E-mail</label>
+        <input
+          class="ds-entrada"
+          id="k-email"
+          type="email"
+          autocomplete="email"
+          [value]="email()"
+          (input)="digitar('email', valorDe($event))"
+          [attr.aria-invalid]="erros().email ? 'true' : null"
+          [attr.aria-describedby]="erros().email ? 'k-email-a' : null"
+        />
+        @if (erros().email; as erro) {
+          <span class="ds-ajuda" id="k-email-a">
+            <svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg>
+            <span>
+              {{ erro }}
+              @if (emailJaTemConta()) {
+                <a routerLink="/entrar">Entrar</a>
+              }
+            </span>
+          </span>
+        }
+      </div>
+
+      <div class="ds-campo ds-campo--grande" [class.ds-campo--erro]="erros().senha">
+        <label for="k-senha">Senha</label>
+        <div class="ds-junto">
+          <input
+            class="ds-entrada"
+            id="k-senha"
+            [type]="senhaVisivel() ? 'text' : 'password'"
+            autocomplete="new-password"
+            [value]="senha()"
+            (input)="digitar('senha', valorDe($event))"
+            [attr.aria-invalid]="erros().senha ? 'true' : null"
+            aria-describedby="k-senha-a"
+          />
+          <button
+            type="button"
+            class="ds-botao ds-botao--fantasma ds-botao--icone"
+            aria-label="Mostrar senha"
+            [attr.aria-pressed]="senhaVisivel()"
+            (click)="alternarSenha()"
+          >
+            @if (senhaVisivel()) {
+              <svg lucideEyeOff class="ds-ic" aria-hidden="true"></svg>
+            } @else {
+              <svg lucideEye class="ds-ic" aria-hidden="true"></svg>
+            }
+          </button>
+        </div>
+        @if (erros().senha; as erro) {
+          <span class="ds-ajuda" id="k-senha-a"><svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg><span>{{ erro }}</span></span>
+        } @else {
+          <span class="ds-ajuda" id="k-senha-a">Use pelo menos 8 caracteres.</span>
+        }
+      </div>
+
+      <button type="submit" class="ds-botao ds-botao--principal ds-botao--grande">Continuar</button>
+
+      <p class="entrada-troca">Já tem conta? <a routerLink="/entrar">Entrar</a></p>
+    </form>
+  } @else {
+    <form class="entrada-form" novalidate aria-labelledby="t-empresa" (submit)="criar($event)">
+      <div class="entrada-cabeca">
+        <div class="ds-etapas" id="k-etapa">
+          <span class="ds-etapas-barras" aria-hidden="true"><span class="feita"></span><span class="feita"></span></span>
+          Etapa 2 de 2
+        </div>
+        <h1 id="t-empresa" class="entrada-titulo" tabindex="-1" aria-describedby="k-etapa">Cadastre sua empresa</h1>
+        <p class="entrada-frase">É o nome que os clientes veem ao agendar.</p>
+      </div>
+
+      <div class="ds-campo ds-campo--grande" [class.ds-campo--erro]="erros().empresa">
+        <label for="k-empresa">Nome da empresa</label>
+        <input
+          class="ds-entrada"
+          id="k-empresa"
+          type="text"
+          autocomplete="organization"
+          [value]="empresa()"
+          (input)="digitarEmpresa(valorDe($event))"
+          [attr.aria-invalid]="erros().empresa ? 'true' : null"
+          [attr.aria-describedby]="erros().empresa ? 'k-empresa-a' : null"
+        />
+        @if (erros().empresa; as erro) {
+          <span class="ds-ajuda" id="k-empresa-a"><svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg><span>{{ erro }}</span></span>
+        }
+      </div>
+
+      <div class="ds-campo ds-campo--grande" [class.ds-campo--erro]="erros().endereco">
+        <label for="k-endereco">Endereço da página</label>
+        <div class="ds-prefixo">
+          <span aria-hidden="true">agendar/</span>
+          <input
+            class="ds-entrada"
+            id="k-endereco"
+            [value]="endereco()"
+            (input)="digitarEndereco($event)"
+            autocapitalize="none"
+            spellcheck="false"
+            autocomplete="off"
+            [attr.aria-invalid]="erros().endereco ? 'true' : null"
+            aria-describedby="k-endereco-a"
+          />
+        </div>
+        @if (erros().endereco; as erro) {
+          <span class="ds-ajuda" id="k-endereco-a"><svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg><span>{{ erro }}</span></span>
+        } @else {
+          <span class="ds-ajuda" id="k-endereco-a">O link que você manda para os clientes marcarem sozinhos.</span>
+        }
+      </div>
+
+      <div class="ds-campo ds-campo--grande" [class.ds-campo--erro]="erros().contato">
+        <label for="k-contato">Contato da empresa</label>
+        <input
+          class="ds-entrada"
+          id="k-contato"
+          type="text"
+          autocomplete="tel"
+          [value]="contato()"
+          (input)="digitarContato(valorDe($event))"
+          [attr.aria-invalid]="erros().contato ? 'true' : null"
+          aria-describedby="k-contato-a"
+        />
+        @if (erros().contato; as erro) {
+          <span class="ds-ajuda" id="k-contato-a"><svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg><span>{{ erro }}</span></span>
+        } @else {
+          <span class="ds-ajuda" id="k-contato-a">Aparece na página de agendamento, para os clientes falarem com você. Pode ser telefone, WhatsApp ou e-mail.</span>
+        }
+      </div>
+
+      @if (erroGeral()) {
+        <div class="ds-aviso ds-aviso--erro" role="alert">
+          <svg lucideCircleAlert class="ds-ic" aria-hidden="true"></svg>
+          <span>{{ erroGeral() }}</span>
+        </div>
+      }
+
+      <button
+        type="submit"
+        class="ds-botao ds-botao--principal ds-botao--grande"
+        [disabled]="enviando()"
+        [attr.aria-busy]="enviando() ? 'true' : null"
+      >
+        Criar conta e abrir a agenda
+      </button>
+      @if (lento()) {
+        <p class="entrada-lento" role="status">Está demorando um pouco. Aguarde.</p>
+      }
+
+      <p class="entrada-troca">
+        <button type="button" class="ds-botao ds-botao--fantasma" [disabled]="enviando()" (click)="voltar()">
+          <svg lucideChevronLeft class="ds-ic" aria-hidden="true"></svg>
+          Voltar
+        </button>
+      </p>
+    </form>
+  }
+</app-pagina-entrada>
