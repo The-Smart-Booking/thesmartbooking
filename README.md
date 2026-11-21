@@ -290,7 +290,7 @@ Rotas de `src/Api/Rotas.cs`. Toda rota de leitura responde também a `HEAD`.
 | `POST` | `/api/clientes` | Cria um cliente | Painel |
 | `GET` | `/api/agendamentos` | Lista os agendamentos do período (`de`, `ate`, `prestador_id`) | Painel |
 | `POST` | `/api/agendamentos` | Cria um agendamento com o serviço e o prestador fixos da empresa | Painel |
-| `GET` | `/api/publico/{slug}` | Nome e fuso da empresa | Público |
+| `GET` | `/api/publico/{slug}` | Nome, fuso e contato da empresa (sem contato: 404) | Público |
 | `GET` | `/api/publico/{slug}/servicos` | Serviços ativos | Público |
 | `GET` | `/api/publico/{slug}/prestadores` | Profissionais: todos os memberships ativos | Público |
 | `GET` | `/api/publico/{slug}/ocupados` | Intervalos ocupados do profissional (`de`, `ate`, `prestador_id`) | Público |

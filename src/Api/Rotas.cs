@@ -30,6 +30,7 @@ public static class Rotas
         app.MapMethods("/api/clientes", Leitura, Clientes.Listar);
         app.MapMethods("/api/agendamentos", Leitura, Agendamentos.Listar);
         app.MapPost("/api/agendamentos", Agendamentos.Criar);
+        app.MapPost("/api/signup", Cadastro.Criar);
 
         // Sem sessão (#162): ficam fora dos middlewares de autenticação e de tenant.
         var publico = app.MapGroup("/api/publico/{slug}").RequireRateLimiting(Publico.LimiteLeitura);

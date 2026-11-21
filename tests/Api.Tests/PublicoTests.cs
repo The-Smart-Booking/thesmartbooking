@@ -27,13 +27,14 @@ internal sealed class EmpresaDeTeste : IAsyncDisposable
 
     private EmpresaDeTeste(NpgsqlConnection dono) => (Dono, Slug) = (dono, $"t-{Guid.NewGuid():N}");
 
-    public static async Task<EmpresaDeTeste> Criar(string fuso = "America/Sao_Paulo")
+    public static async Task<EmpresaDeTeste> Criar(string fuso = "America/Sao_Paulo", string? contato = "(11) 3333-4444")
     {
         var e = new EmpresaDeTeste(await Banco.Conectar("MIGRATIONS_DATABASE_URL"));
         await e.Dono.Exec("INSERT INTO usuarios (id, email, senha_hash, nome) VALUES ($1, $2, 'x', 'Paula Prestadora')", e.Prestador, $"{e.Prestador}@teste.example");
         await e.Dono.Exec("INSERT INTO usuarios (id, email, senha_hash, nome) VALUES ($1, $2, 'x', 'Rui Removido')", e.Removido, $"{e.Removido}@teste.example");
         await using var tx = await e.Dono.ComTenant(e.Tenant);
-        await e.Dono.Exec("INSERT INTO tenants (id, nome, slug, fuso_horario, criado_por) VALUES ($1, 'Empresa Teste', $2, $3, $4)", e.Tenant, e.Slug, fuso, e.Prestador);
+        await e.Dono.Exec("INSERT INTO tenants (id, nome, slug, fuso_horario, contato_publico, criado_por) VALUES ($1, 'Empresa Teste', $2, $3, $4, $5)",
+            e.Tenant, e.Slug, fuso, (object?)contato ?? DBNull.Value, e.Prestador);
         await e.Dono.Exec("INSERT INTO memberships (usuario_id, tenant_id, papel) VALUES ($1, $2, 'prestador')", e.Prestador, e.Tenant);
         await e.Dono.Exec("INSERT INTO memberships (usuario_id, tenant_id, papel, removido_em) VALUES ($1, $2, 'prestador', now())", e.Removido, e.Tenant);
         await e.Dono.Exec("INSERT INTO servicos (id, tenant_id, nome, duracao_minutos, preco_centavos) VALUES ($1, $2, 'Corte', 60, 5000)", e.Servico, e.Tenant);
@@ -88,16 +89,33 @@ public class PublicoTests
     private static string[] Chaves(JsonElement objeto) => objeto.EnumerateObject().Select(p => p.Name).ToArray();
 
     [Fact]
-    public async Task EmpresaDevolveSoNomeEFuso()
+    public async Task EmpresaDevolveSoNomeFusoEContato()
     {
-        await using var e = await EmpresaDeTeste.Criar("Asia/Tokyo");
+        await using var e = await EmpresaDeTeste.Criar("Asia/Tokyo", "  WhatsApp (11) 3333-4444 ");
         await using var api = await Api();
         var r = await api.Chamar("GET", $"/api/publico/{e.Slug}");
         Assert.Equal(HttpStatusCode.OK, r.StatusCode);
         var corpo = await r.Json();
-        Assert.Equal(["nome", "fuso_horario"], Chaves(corpo));
+        Assert.Equal(["nome", "fuso_horario", "contato"], Chaves(corpo));
         Assert.Equal("Empresa Teste", corpo.GetProperty("nome").GetString());
         Assert.Equal("Asia/Tokyo", corpo.GetProperty("fuso_horario").GetString());
+        Assert.Equal("WhatsApp (11) 3333-4444", corpo.GetProperty("contato").GetString());
+    }
+
+    // Sem contato a página pública não funciona (#170): mesma resposta do slug inexistente.
+    [Theory]
+    [InlineData(null, "GET", "")]
+    [InlineData(null, "POST", "/agendamentos")]
+    [InlineData("", "GET", "")]
+    [InlineData("   ", "GET", "/servicos")]
+    [InlineData("   ", "POST", "/agendamentos")]
+    public async Task EmpresaSemContatoEhNaoEncontrada(string? contato, string metodo, string rota)
+    {
+        await using var e = await EmpresaDeTeste.Criar(contato: contato);
+        await using var api = await Api();
+        var r = await api.Chamar(metodo, $"/api/publico/{e.Slug}{rota}", metodo == "POST" ? e.Corpo($"{Segunda}T09:00:00") : null);
+        await r.ExigirErro(HttpStatusCode.NotFound, Erros.NaoEncontrado);
+        Assert.Equal(0, await e.Agendamentos());
     }
 
     [Theory]

@@ -38,6 +38,7 @@ builder.Services.AddSingleton(AppDb.Opcoes(Config.ParaConnectionString(cfg.Datab
 builder.Services.AddScoped<AppDb>();
 builder.Services.AddSingleton(new Fixos(cfg.TenantFixo, cfg.PrestadorFixo, cfg.ServicoFixo));
 builder.Services.AddPublico();
+builder.Services.AddCadastro();
 
 var app = builder.Build();
 
@@ -73,6 +74,7 @@ for (var tentativa = 1; ; tentativa++)
 
 app.UseRouting();
 app.UsePublico();
+app.UseCadastro();
 // Toda requisição numa transação com o tenant: o do slug nas rotas públicas; nas
 // demais, na Fatia 2 ele vem da sessão.
 app.UseTransacaoNasRotas(ctx => Publico.TenantDaRota(ctx) ?? cfg.TenantFixo);

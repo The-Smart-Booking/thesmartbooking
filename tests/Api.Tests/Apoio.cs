@@ -144,18 +144,41 @@ public sealed class Servidor : IAsyncDisposable
     /// As rotas para testes de validação: o banco está fora do ar, então tocar nele é
     /// falha (a exceção sobe para o teste).
     /// </summary>
-    public static Task<Servidor> SemBanco() => Criar(
-        s => s.AddSingleton(new AppDb(AppDb.Opcoes(Banco.ForaDoAr)))
-            .AddSingleton(new Fixos(Seed.Alfa, Seed.Prestador, Seed.ServicoAlfa)),
-        app => app.MapApi());
+    public static Task<Servidor> SemBanco() => SemBanco(null);
+
+    /// <summary>
+    /// <see cref="SemBanco()"/> com o relógio do teste, para o limite de cadastros por IP:
+    /// IP real e limite antes das rotas.
+    /// </summary>
+    public static Task<Servidor> ComCadastro(TimeProvider relogio) => SemBanco(relogio);
+
+    private static Task<Servidor> SemBanco(TimeProvider? relogio) => Criar(
+        s =>
+        {
+            if (relogio is not null)
+            {
+                s.AddSingleton(relogio);
+            }
+            s.AddSingleton(new AppDb(AppDb.Opcoes(Banco.ForaDoAr)))
+                .AddSingleton(new Fixos(Seed.Alfa, Seed.Prestador, Seed.ServicoAlfa))
+                .AddCadastro();
+        },
+        app =>
+        {
+            app.UseRouting();
+            app.UseCadastro();
+            app.MapApi();
+        });
 
     /// <summary>A API inteira, com UseTransacaoNasRotas, sobre a connection string dada.</summary>
     public static Task<Servidor> ComTransacao(string connectionString, Action<WebApplication> rotas) => Criar(
         s => s.AddSingleton(AppDb.Opcoes(connectionString)).AddScoped<AppDb>()
-            .AddSingleton(new Fixos(Seed.Alfa, Seed.Prestador, Seed.ServicoAlfa)),
+            .AddSingleton(new Fixos(Seed.Alfa, Seed.Prestador, Seed.ServicoAlfa))
+            .AddCadastro(),
         app =>
         {
             app.UseRouting();
+            app.UseCadastro();
             // No teste, cada requisição escolhe o seu tenant.
             app.UseTransacaoNasRotas(ctx => Guid.Parse(ctx.Request.Headers["Tenant"].ToString()));
             rotas(app);
@@ -175,12 +198,13 @@ public sealed class Servidor : IAsyncDisposable
             {
                 s.AddSingleton(relogio);
             }
-            s.AddPublico();
+            s.AddPublico().AddCadastro();
         },
         app =>
         {
             app.UseRouting();
             app.UsePublico();
+            app.UseCadastro();
             app.UseTransacaoNasRotas(ctx => Publico.TenantDaRota(ctx) ?? Seed.Alfa);
             app.MapApi();
         });
@@ -240,4 +264,12 @@ public static class Respostas
         Assert.Equal(codigo, erro.GetProperty("codigo").GetString());
         Assert.NotEqual("", erro.GetProperty("mensagem").GetString());
     }
+}
+
+/// <summary>Relógio que o teste avança à mão.</summary>
+public sealed class RelogioAjustavel(DateTimeOffset inicio) : TimeProvider
+{
+    public DateTimeOffset Agora { get; set; } = inicio;
+
+    public override DateTimeOffset GetUtcNow() => Agora;
 }

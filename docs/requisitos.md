@@ -655,6 +655,13 @@ Decidido em 18/11/2026, para o piloto (#180):
 | Aviso de privacidade | Texto atual do formulário público (#163, PR #167): "Seu nome e telefone ficam guardados com esta empresa para registrar o agendamento e identificar você nos próximos." |
 | Aprovação de PR | PR para a `main` exige 1 aprovação |
 
+Decidido em 20/11/2026 (#170):
+
+| Tema | Decisão |
+|---|---|
+| Contato na página pública | `tenants.contato_publico` (até 120 caracteres), devolvido como `contato` em `GET /api/publico/{slug}` e exibido como texto simples, sem link, no topo da página e na confirmação, com a orientação de procurar a empresa para cancelar. O valor é lido sem espaços nas pontas |
+| Empresa sem contato | Contato vazio ou só com espaços conta como ausente: todas as rotas `/api/publico/{slug}` respondem 404 `nao_encontrado` e a página mostra empresa não encontrada. O contato da empresa piloto é gravado no provisionamento (#174); a edição pelo painel fica fora do piloto (só por SQL) |
+
 ## 13. Estimativa de prazo
 
 Base: 3 pessoas × ~5h/semana = 15h/semana nominais. Esforço por fatia no

@@ -347,6 +347,10 @@ namespace Dayspot.Api.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("ContatoPublico")
+                        .HasColumnType("text")
+                        .HasColumnName("contato_publico");
+
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criado_em");

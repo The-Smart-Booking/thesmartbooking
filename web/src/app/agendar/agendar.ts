@@ -113,6 +113,7 @@ export class Agendar {
   }
 
   protected readonly nomeEmpresa = computed(() => (this.empresa.hasValue() ? this.empresa.value().nome : ""));
+  protected readonly contatoEmpresa = computed(() => (this.empresa.hasValue() ? this.empresa.value().contato : ""));
   private readonly fuso = computed(() => (this.empresa.hasValue() ? this.empresa.value().fuso_horario : ""));
   protected readonly hoje = computed(() => (this.fuso() ? noFuso(this.agora(), this.fuso()).dia : ""));
 

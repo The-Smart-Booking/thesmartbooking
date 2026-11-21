@@ -277,4 +277,22 @@ public class ConsultasTests
         await db.Notificacoes.FirstOrDefaultAsync();
         await db.Sessoes.FirstOrDefaultAsync();
     }
+
+    // contato_publico é dado público da empresa (#112); o CHECK limita o tamanho.
+    [Fact]
+    public async Task ContatoPublicoAcimaDe120EhRecusado()
+    {
+        await using var dono = await Banco.Conectar("MIGRATIONS_DATABASE_URL");
+        await using var tx = await dono.ComTenant(Seed.Alfa);
+
+        var erro = await Assert.ThrowsAsync<PostgresException>(() =>
+            dono.Exec("UPDATE tenants SET contato_publico = repeat('x', 121) WHERE id = $1", Seed.Alfa));
+        Assert.Equal("23514", erro.SqlState);
+        Assert.Equal("contato_publico_tamanho", erro.ConstraintName);
+
+        // A transação abortou no erro: o caso válido roda em outra, também desfeita.
+        await tx.RollbackAsync();
+        await using var tx2 = await dono.ComTenant(Seed.Alfa);
+        Assert.Equal(1, await dono.Exec("UPDATE tenants SET contato_publico = repeat('x', 120) WHERE id = $1", Seed.Alfa));
+    }
 }

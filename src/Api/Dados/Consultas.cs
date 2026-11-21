@@ -7,7 +7,12 @@ public sealed record NovoAgendamento(Guid ClienteId, Guid ServicoId, Guid Presta
 
 public sealed record AgendamentoComCliente(Agendamento Agendamento, string ClienteNome);
 
-public sealed record EmpresaPublica(Guid Id, string Nome, string FusoHorario);
+/// <summary>O que o cadastro grava: e-mail já normalizado, senha já em hash, slug já em minúsculas.</summary>
+public sealed record NovaEmpresa(string Email, string SenhaHash, string Nome, string EmpresaNome, string Slug, string Contato);
+
+public sealed record EmpresaCriada(Guid UsuarioId, Guid TenantId);
+
+public sealed record EmpresaPublica(Guid Id, string Nome, string FusoHorario, string Contato);
 
 public sealed record EmpresaDoUsuario(Guid TenantId, string Nome, string Slug, string Papel);
 
@@ -89,13 +94,46 @@ public static class Consultas
     }
 
     /// <summary>
-    /// A única consulta sem tenantId: é ela que descobre o tenant, antes da transação.
-    /// tenants fica fora do RLS (guia §009), e só estas colunas saem daqui.
+    /// Cria usuário, empresa e membership de administrador numa instrução só. Exceção à
+    /// regra "toda consulta recebe tenantId": é ela que cria o tenant, e as três
+    /// tabelas ficam fora do RLS (guia §009). E-mail ou slug repetido sobe como
+    /// PostgresException 23505 (usuarios_email_unico, tenants_slug_key), e a transação
+    /// da requisição desfaz o que já tinha entrado.
     /// </summary>
-    public static Task<EmpresaPublica?> BuscarEmpresaPorSlug(this AppDb db, string slug, CancellationToken ct = default) =>
-        db.Tenants.Where(t => t.Slug == slug)
-            .Select(t => new EmpresaPublica(t.Id, t.Nome, t.FusoHorario))
+    public static async Task<EmpresaCriada> CriarEmpresa(this AppDb db, NovaEmpresa n, CancellationToken ct = default)
+    {
+        // O SqlQuery mapeia o resultado pela convenção snake_case (RETURNING usuario_id, tenant_id):
+        // alias como AS "UsuarioId" quebra o mapeamento.
+        var criadas = await db.Database.SqlQuery<EmpresaCriada>($"""
+            WITH u AS (
+              INSERT INTO usuarios (email, senha_hash, nome)
+              VALUES ({n.Email}, {n.SenhaHash}, {n.Nome})
+              RETURNING id
+            ), t AS (
+              INSERT INTO tenants (nome, slug, contato_publico, criado_por)
+              SELECT {n.EmpresaNome}, {n.Slug}, {n.Contato}, u.id FROM u
+              RETURNING id, criado_por
+            )
+            INSERT INTO memberships (usuario_id, tenant_id, papel)
+            SELECT criado_por, id, 'administrador' FROM t
+            RETURNING usuario_id, tenant_id
+            """).ToListAsync(ct);
+        return criadas.Single();
+    }
+
+    /// <summary>
+    /// A única consulta sem tenantId: é ela que descobre o tenant, antes da transação.
+    /// tenants fica fora do RLS (guia §009), e só estas colunas saem daqui. Nulo também
+    /// sem contato (vazio ou só espaços): a página pública exige contato (#170).
+    /// </summary>
+    public static async Task<EmpresaPublica?> BuscarEmpresaPorSlug(this AppDb db, string slug, CancellationToken ct = default)
+    {
+        var t = await db.Tenants.Where(t => t.Slug == slug)
+            .Select(t => new { t.Id, t.Nome, t.FusoHorario, t.ContatoPublico })
             .FirstOrDefaultAsync(ct);
+        var contato = t?.ContatoPublico?.Trim();
+        return string.IsNullOrEmpty(contato) ? null : new EmpresaPublica(t!.Id, t.Nome, t.FusoHorario, contato);
+    }
 
     public static Task<List<Servico>> ListarServicosAtivos(this AppDb db, Guid tenantId, CancellationToken ct = default) =>
         db.Servicos.Where(s => s.TenantId == tenantId && s.Ativo)

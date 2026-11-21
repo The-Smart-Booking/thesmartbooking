@@ -11,7 +11,10 @@
     @if (nomeEmpresa(); as nome) {
       <header class="publica-empresa">
         <span class="avatar avatar-56" aria-hidden="true">{{ iniciais(nome) }}</span>
-        <p class="titulo-cartao">{{ nome }}</p>
+        <div>
+          <p class="titulo-cartao">{{ nome }}</p>
+          <p class="secundario">Contato: {{ contatoEmpresa() }}</p>
+        </div>
       </header>
     }
     @if (agendado(); as a) {
@@ -24,6 +27,7 @@
         </span>
         <h1 class="titulo-tela">{{ a.frase }}</h1>
         <p class="secundario">{{ a.detalhe }}</p>
+        <p class="secundario">Para cancelar ou remarcar, fale com a empresa: {{ contatoEmpresa() }}</p>
         <div>
           <button type="button" class="botao botao-secundario" (click)="marcarOutro()">Marcar outro horário</button>
         </div>

@@ -2,7 +2,17 @@
 
 Fatia 0 do backlog (itens 0.7 a 0.18) e base de acesso a dados da Fatia 1 (1.2 e
 1.3). Complementa `docs/requisitos.md`.
-Versão **1.12** · 18/11/2026
+Versão **1.13** · 20/11/2026
+
+## Mudanças desde a v1.12
+
+Cadastro de empresa (#112). Uma migration nova, a primeira com id de data e hora.
+
+- **`tenants.contato_publico`:** coluna `text`, nula, com `CHECK contato_publico_tamanho`
+  (até 120 caracteres). É o contato exibido na página pública de agendamento, e o #170
+  a reaproveita (§002).
+- **Migration `20261120120000_AdicionarContatoPublico` (#112):** entra depois das dez
+  primeiras e sem tomar a 011, reservada aos convites (§Ordem das migrations).
 
 ## Mudanças desde a v1.11
 
@@ -228,9 +238,11 @@ A ordem não é estética — é imposta pelas dependências de chave estrangeir
 009 RLS + REVOKE DELETE ← depende de todas
 010 sessoes             ← depende de 003 (independe do resto)
 011 convites            ← depende de 002 e 003 (pendente: fica para depois do piloto)
+
+20261120120000 contato_publico ← depende de 002 (#112; id com data e hora, fora da sequência numerada)
 ```
 
-As migrations aplicadas vão até a 010 (`src/Api/Migrations/`).
+As migrations numeradas aplicadas vão até a 010; depois delas vem a `20261120120000_AdicionarContatoPublico` (`src/Api/Migrations/`).
 
 ## Dinheiro: centavos em `integer`
 
@@ -310,6 +322,20 @@ adote.
 
 **`criado_por` não está aqui.** A 002 já foi mergeada, e `usuarios` só nasce na
 003: a coluna entra por `ALTER TABLE` lá (ver 003).
+
+**`contato_publico` entra depois, por `ALTER TABLE`** (migration `20261120120000_AdicionarContatoPublico`, #112): telefone,
+WhatsApp ou e-mail da empresa, dado público exibido na página de agendamento. Até 120
+caracteres (`CHECK contato_publico_tamanho`), nulo nas empresas antigas, fictício no seed,
+obrigatório no cadastro (`POST /api/signup`). Sem contato, as rotas públicas respondem 404 (#170).
+
+```sql
+-- Up
+ALTER TABLE tenants ADD COLUMN contato_publico text
+  CONSTRAINT contato_publico_tamanho CHECK (char_length(contato_publico) <= 120);
+
+-- Down
+ALTER TABLE tenants DROP COLUMN contato_publico;
+```
 
 ⚠️ **`telegram_bot_token` é legado e fica sempre nulo**, garantido pelo `CHECK
 telegram_bot_token_nulo`. `tenants` fica fora do RLS (o login precisa dela antes de
@@ -1112,7 +1138,8 @@ tenant, portanto zero linhas (RLS falha fechado) ou, pior, bug silencioso nas
 tabelas fora do RLS. Por isso toda consulta roda dentro de uma transação aberta por
 este helper, com uma exceção: `BuscarEmpresaPorSlug` roda **antes** da transação nas
 rotas públicas, porque é ela que descobre o tenant. Lê só `tenants`, que fica fora do
-RLS, filtra pelo slug da rota e devolve só `id`, `nome` e `fuso_horario`.
+RLS, filtra pelo slug da rota e devolve só `id`, `nome`, `fuso_horario` e `contato_publico`
+(empresa sem contato volta nula, como slug inexistente, #170).
 
 ```csharp
 public async Task<IDbContextTransaction> IniciarComTenant(Guid tenantId, CancellationToken ct = default)

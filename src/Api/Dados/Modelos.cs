@@ -12,6 +12,7 @@ public sealed class Tenant
     public string? TelegramBotToken { get; set; }
     public DateTime CriadoEm { get; set; }
     public Guid CriadoPor { get; set; }
+    public string? ContatoPublico { get; set; }
 }
 
 public sealed class Usuario

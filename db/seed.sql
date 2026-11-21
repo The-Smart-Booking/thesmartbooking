@@ -28,9 +28,10 @@ INSERT INTO usuarios (id, email, senha_hash, nome) VALUES
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'admin@beta.example',     '$argon2id$v=19$m=65536,t=3,p=4$c2VlZC1mYWxzbw$c2VlZC1oYXNoLW5hby1mdW5jaW9uYWw', 'Beta Administradora')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO tenants (id, nome, slug, criado_por) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Barbearia Alfa', 'alfa', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
-  ('22222222-2222-2222-2222-222222222222', 'Clinica Beta',   'beta', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
+-- contato_publico fictício: sem ele, a página pública responde 404 (#170).
+INSERT INTO tenants (id, nome, slug, contato_publico, criado_por) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'Barbearia Alfa', 'alfa', 'contato@alfa.example', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+  ('22222222-2222-2222-2222-222222222222', 'Clinica Beta',   'beta', 'contato@beta.example', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
 ON CONFLICT (id) DO NOTHING;
 
 -- Todo criador é administrador do tenant que criou. No Alfa, o administrador
